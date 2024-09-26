@@ -1,0 +1,20 @@
+version: "3.3"
+
+services:
+  wrapper:
+    build:
+      context: image
+      dockerfile: Dockerfile
+    container_name: $PROJECT_NAME
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    stdin_open: true
+    tty: true
+    volumes:
+      - $PROJECT_DIR:/workspace
+    ports:
+      - "$SSH_BIND:22"
+    devices:
+      - /dev/fuse:/dev/fuse
+    privileged: true
