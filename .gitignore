@@ -1,12 +1,38 @@
-CMakeLists.txt.user
+# CMake
+
 CMakeCache.txt
 CMakeFiles
+CMakeLists.txt.user
 CMakeScripts
-Testing
-Makefile
-cmake_install.cmake
-install_manifest.txt
-compile_commands.json
-CTestTestfile.cmake
-_deps
 CMakeUserPresets.json
+CTestTestfile.cmake
+Makefile
+Testing
+_deps
+cmake_install.cmake
+compile_commands.json
+install_manifest.txt
+
+# Dependencies
+
+/node_modules
+
+# Production
+
+/build
+
+# Generated files
+
+.cache-loader
+.docusaurus
+
+# Misc
+
+.DS_Store
+.env.development.local
+.env.local
+.env.production.local
+.env.test.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
