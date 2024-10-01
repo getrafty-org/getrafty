@@ -1,10 +1,13 @@
 #!/bin/sh
 
 # Constants
-DEVVM_NAME="getrafty.org"
+DEVVM_NAME="getrafty"
 DEVVM_BIND_DIR=$(pwd)
 DEVVM_SSH_PORT=3333
 DEVVM_WWW_PORT=3000
+
+# User to be used for idevvm login. This user is created automatically and ahs the same UID and GID as the user of the host which prevents may types of permissions issues.
+DEVVM_USER=ubuntu
 
 # Function to display error messages and exit
 error_exit() {
@@ -58,6 +61,22 @@ check_devvm_up() {
 
 # Commands
 
+# Default command function for printing a quick description of the CLI and list of supported commands.
+command_default() {
+    echo "Hi! I'm Clippy, your class assistant."
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        version=$(git rev-parse --short HEAD)
+        echo "Version: $version"
+    fi
+    cat <<EOF
+
+Supported commands:
+- boot [--build]: Build and run the development VM. Use '--build' option to rebuild the image.
+- attach [--root]: Attach to the running DevVM. Use '--root' option for root access.
+
+EOF
+}
+
 # Function to build and run the Docker container with optional deletion of old image
 command_boot() {
     build=false
@@ -80,7 +99,10 @@ command_boot() {
     fi
 
     if [ "$build" = true ]; then
-        docker images "$DEVVM_NAME" -q | grep -q . && docker rmi "$DEVVM_NAME" || error_exit "Failed to delete old image."
+        image_id=$(docker images "$DEVVM_NAME" -q)
+        if [ -n "$image_id" ]; then
+            docker rmi "$image_id" || error_exit "Failed to delete old image."
+        fi
         docker build -t "$DEVVM_NAME" . || error_exit "Failed to build Docker image."
     fi
 
@@ -90,15 +112,16 @@ command_boot() {
         --cap-add SYS_ADMIN \
         --privileged \
         --device /dev/fuse:/dev/fuse \
-        -v "$DEVVM_BIND_DIR:/home/me/workspace/" \
+        -v "$DEVVM_BIND_DIR:/home/$DEVVM_USER/workspace/" \
         -p "$DEVVM_SSH_PORT:22" \
         -p $DEVVM_WWW_PORT:$DEVVM_WWW_PORT \
-        -e DEVVM_NAME="$DEVVM_NAME" \
-        -e DEVVM_BIND_DIR="$DEVVM_BIND_DIR" \
-        -e DEVVM_SSH_PORT="$DEVVM_SSH_PORT" \
-        getrafty-wrapper || error_exit "Failed to start Docker container."
+        $DEVVM_NAME || error_exit "Failed to start Docker container, please build the image first."
 
-    echo "DevVM boot completed. Connect using SSH: ssh me@$(hostname -I | awk '{print $1}') -p $DEVVM_SSH_PORT, or simply: clippy attach"
+    docker exec $DEVVM_NAME /bin/sh -c "mkdir /home/$DEVVM_USER/.devvm" >/dev/null 2>&1
+    docker cp .bashrc $DEVVM_NAME:/home/$DEVVM_USER/.devvm/.bashrc >/dev/null 2>&1
+    docker exec $DEVVM_NAME /bin/sh -c "cat /home/$DEVVM_USER/.devvm/.bashrc >> /home/$DEVVM_USER/.bashrc" >/dev/null 2>&1
+
+    echo "DevVM boot completed. Connect using by running: clippy attach"
 }
 
 # Function to attach to an already running DevVM
@@ -121,7 +144,7 @@ command_attach() {
     if [ "$root" = true ]; then
         docker exec -it "$container_id" /bin/bash
     else
-        ssh me@$(hostname -I | awk '{print $1}') -p $DEVVM_SSH_PORT
+        ssh $DEVVM_USER@$(hostname -I | awk '{print $1}') -p $DEVVM_SSH_PORT
     fi
 }
 

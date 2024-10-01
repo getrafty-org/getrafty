@@ -1,47 +1,42 @@
 ---
 sidebar_position: 1
+slug: /
 ---
 
-# Tutorial Intro
 
-Let's discover **Docusaurus in less than 5 minutes**.
+# Let's Get Rafty
 
-## Getting Started
+> You don't have to be an engineer to be a racing driver, but you do have to have Mechanical Sympathy
+> 
+> – Jackie Stewart, racing driver.
 
-Get started by **creating a new site**.
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+This project is an effort to create an open series of write-ups and exercises on distributed systems. The project is inspired by the [MIT 6.824](https://pdos.csail.mit.edu/archive/6.824-2012/) 2010s class on distributed systems with a good chunk of exercises in this reflecting the contents of the original class. Although, this project exerices differ in many ways to reflect the changes in the industry over the last decade.
 
-### What you'll need
 
-- [Node.js](https://nodejs.org/en/download/) version 18.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
+The ultimate motivation for this project is to just craft things becasue it’s fun. Although, I expect it to be useful for anyone who is interested in the field. Everything you craft belongs to you, you have every single line of it.
 
-## Generate a new site
 
-Generate a new Docusaurus site using the **classic template**.
+Please, when forking a repository, make it private. Do not publish solutions to problems in the public. Thnks!
 
-The classic template will automatically be added to your project after you run the command:
+## What do we do
 
-```bash
-npm init docusaurus@latest my-website classic
-```
+In this class we will design a toy distributed file system from the very scratch, step by step. Start with implementation of concurrency primitives and making they form a bigger abstractions such as communication protocols and consensus algorithms.
 
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
+## Navigate
 
-The command also installs all necessary dependencies you need to run Docusaurus.
 
-## Start your site
+[🚀 Getting Started](getting-started)
 
-Run the development server:
 
-```bash
-cd my-website
-npm run start
-```
 
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
 
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
 
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+
+
+
+:::tip
+
+Why the name "Get Rafty"? That appeared to me as a funny game of words, one of the fundamental concept introduced in this class is the [Raft Consensus Algorithm](https://raft.github.io/). 
+
+:::

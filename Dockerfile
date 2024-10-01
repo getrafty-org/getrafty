@@ -1,12 +1,13 @@
 # Base image
 FROM ubuntu:24.04
 
+
 # Set environment variables
 ENV TZ=Europe/London \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     CXX="/usr/bin/clang++-17" \
-    CC="/usr/bin/clang-17"
+    CC="/usr/bin/clang-17" 
 
 # Dependency
 ARG DEPS=" \
@@ -41,13 +42,10 @@ ARG DEPS=" \
     unzip \
 "
 
-
-# Create a non-root user with no password
 RUN apt-get update -q && \
     apt-get install -y sudo && \
-    useradd -m -s /bin/bash me && \
-    echo "me ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-    passwd -d me
+    echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    passwd -d ubuntu
 
     
 # Install dependencies
@@ -72,6 +70,7 @@ RUN sed -i 's/#PermitEmptyPasswords no/PermitEmptyPasswords yes/' /etc/ssh/sshd_
 
 # Configure SSH
 RUN echo "StrictHostKeyChecking=no" >> /etc/ssh/ssh_config && mkdir /var/run/sshd
+
 
 # Clean up
 RUN rm -rf /var/lib/apt/lists/*
