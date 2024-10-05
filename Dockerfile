@@ -61,6 +61,8 @@ RUN apt-get update -q && \
     apt-get update -q && \
     apt-get install -y $DEPS
 
+
+
 # Configure SSH daemon for no authentication
 RUN sed -i 's/#PermitEmptyPasswords no/PermitEmptyPasswords yes/' /etc/ssh/sshd_config && \
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
