@@ -16,23 +16,39 @@ Please make sure to keep your repository private when forking. Avoid sharing sol
 
 
 
-## What do we do
+## Goal
 
 In this class we will design a toy distributed file system from the very scratch, step by step. Start with implementation of concurrency primitives and making they form a bigger abstractions such as communication protocols and consensus algorithms.
 
 ## Navigate
 
 
-[🚀 Getting Started](getting-started)
+[Getting Started](getting-started)
 
 
 
+[FAQ](etc/faq)
+
+**Tooling**
+
+[Install Docker](etc/use-docker)
+
+[How to use this repository with VSCode](etc/use-vscode)
 
 
+## Contributing
 
-<div class="markdown-alert markdown-alert-note">
+I've started to write things here very recently so the contents are very immature and incomplete. I am open to any suggestions and contributions.
+If you have found a bug, please create an issue (or pull request) [in the repository](https://github.com/sidosera/getrafty).
+If you have an idea of a new lab or task, great! Please create an issue with the idea and we will discuss it.
 
-Why the name "Getrafty"? That appeared to me as a funny game of words, one of the fundamental concept introduced in this class is the [Raft Consensus Algorithm](https://raft.github.io/).
 
-</div>
+## License
+
+The source and documentation are released under the [MIT License](https://github.com/sidosera/getrafty/blob/main/LICENSE).
+
+---
+*Why the name "Getrafty"? That appeared to me as a funny game of words, one of the fundamental concept introduced in this class is the [Raft Consensus Algorithm](https://raft.github.io/)*.
+
+
 
