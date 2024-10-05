@@ -8,13 +8,13 @@ layout: layout.vto
 > You don't have to be an engineer to be a racing driver, but you do have to have Mechanical Sympathy
 > – Jackie Stewart, racing driver.
 
+This project is an open series of write-ups and exercises on distributed systems inspired by [MIT’s 6.824](https://pdos.csail.mit.edu/archive/6.824-2012/).
 
-This project is an effort to create an open series of write-ups and exercises on distributed systems. The project is inspired by the [MIT 6.824](https://pdos.csail.mit.edu/archive/6.824-2012/) 2010s class on distributed systems with a good chunk of exercises in this reflecting the contents of the original class. Although, this project exerices differ in many ways to reflect the changes in the industry over the last decade.
+The main motivation behind this project is simply the joy of building things. That said, I believe it will also be useful for anyone interested in learning more about distributed systems. What you create here is entirely yours — every line of code belongs to you.
 
-The ultimate motivation for this project is to just craft things becasue it’s fun. Although, I expect it to be useful for anyone who is interested in the field. Everything you craft belongs to you, you have every single line of it.
+Please make sure to keep your repository private when forking. Avoid sharing solutions publicly. Thanks!
 
 
-Please, when forking a repository, make it private. Do not publish solutions to problems in the public. Thnks!
 
 ## What do we do
 
