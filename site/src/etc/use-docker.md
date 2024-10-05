@@ -22,7 +22,7 @@ Download, install and launch [Docker Desktop](https://docs.docker.com/desktop/in
 
 ### Check Docker has been installed
 
-This should output an hello message from Docker
+This should output a hello message from Docker
 
 ```bash
 docker run hello-world

@@ -18,12 +18,14 @@ Please make sure to keep your repository private when forking. Avoid sharing sol
 
 ## Goal
 
-In this class we will design a toy distributed file system from the very scratch, step by step. Start with implementation of concurrency primitives and making they form a bigger abstractions such as communication protocols and consensus algorithms.
+In this class we will design a toy distributed file system from the very scratch, step by step. Start with implementation of concurrency primitives and making they form bigger abstractions such as communication protocols and consensus algorithms.
 
 ## Navigate
 
 
 [Getting Started](getting-started)
+
+[Hello World](hello-world)
 
 
 
@@ -38,9 +40,9 @@ In this class we will design a toy distributed file system from the very scratch
 
 ## Contributing
 
-I've started to write things here very recently so the contents are very immature and incomplete. I am open to any suggestions and contributions.
+I've started to write things here very recently, so the contents are very immature and incomplete. I am open to any suggestions and contributions.
 If you have found a bug, please create an issue (or pull request) [in the repository](https://github.com/sidosera/getrafty).
-If you have an idea of a new lab or task, great! Please create an issue with the idea and we will discuss it.
+If you have an idea of a new lab or task, great! Please create an issue with the idea, and we will discuss it.
 
 
 ## License

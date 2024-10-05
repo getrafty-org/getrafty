@@ -4,6 +4,16 @@
 /* Font Import */
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
+
+/* Megaphone */
+.megaphone {
+  color: #a3adc2;
+}
+
+.megaphone-not-ready::before {
+  content: "🚧 ";
+}
+
 /* Navbar */
 .navbar {
   display: flex;
@@ -41,16 +51,11 @@
   text-decoration: none;
 }
 
-main {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  font-size: 16px;
-  line-height: 1.5;
-  word-wrap: break-word;
-}
 /* Make the links black */
 :root {
   --color-link: #20609f;
   --color-link-hover: var(--color-dim);
+  --gl-background-color-strong: #ececef;
 }
 
 [data-theme="dark"]:root {
@@ -67,7 +72,7 @@ a.fa:hover {
 
 a.fa {
   color: #a3adc2;
-  
+
 }
 
 [data-theme="dark"]::a.fa {
@@ -79,6 +84,15 @@ main {
   padding: 0;
   max-width: min(100% - 15vw, 55em);
   margin: 0 auto;
+  margin: 1em;
+  font-family: 'Roboto', sans-serif;
+  width: 85%;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: default;
+  text-justify: auto;
+  line-height: 143%;
 
   &> :first-child {
     margin-top: 0;
@@ -88,4 +102,23 @@ main {
 /* Search tweak */
 .search {
   margin-top: var(--row-gap-xsmall);
+}
+
+/* Code blocks */
+:not(pre)>code {
+  padding: 2px 4px;
+  color: #18171d;
+  background-color: var(--gl-background-color-strong);
+  border-radius: .25rem;
+  font-family: "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Consolas", "Ubuntu Mono", "Courier New", "andale mono", "lucida console", monospace;
+  vertical-align: bottom;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+  font-size: 90%;
+}
+
+p>code {
+  font-weight: inherit;
 }

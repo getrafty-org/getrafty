@@ -4,7 +4,7 @@ layout: layout.vto
 
 # Using Visual Studio Code
 
-### Attach to devvm
+### Attach to dev VM
 ```bash
 $ clippy attach
 ```
@@ -12,7 +12,7 @@ $ clippy attach
 
 ### Download VSCode server on the devvm
 
-Download the vscode server on the devvm:
+Download the VS Code server on the dev VM:
 
 ```bash
 $ curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz $ tar -xf vscode_cli.tar.gz
@@ -21,7 +21,7 @@ $ curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpin
 > /** *If you find yourself needing to frequently relaunch devvm, it can be inconvenient to repeat this step multiple times. To streamline the process, you can add this command to your [.bashrc](https://github.com/sidosera/getrafty/blob/main/.bashrc) file, which will ensure the VSCode server is downloaded upon your first login.* **/
 
 
-### Start tunell
+### Start tunel
 Run the following command and follow command prompts:
 
 ```bash
@@ -45,6 +45,11 @@ Open this link in your browser https://vscode.dev/tunnel/XXXX
 ### Open VSCode session
 
 The command below outputs the link to the newly created VSCode session, e.g. `https://vscode.dev/tunnel/XXXX`. Just open the link in your browser.
+
+
+### Recommended extensions
+
+llvm-vs-code-extensions.vscode-clangd
 
 
 Enjoy coding.
