@@ -1,47 +1,77 @@
 <!doctype html>
+<html lang="en">
 
-<html lang="{{ it.lang }}">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="supported-color-schemes" content="light dark">
-    <meta name="theme-color" content="hsl(220, 20%, 100%)" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="hsl(220, 20%, 10%)" media="(prefers-color-scheme: dark)">
-    
-    <link rel="stylesheet" href="/static/styles.css">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/rafty64.webp">
-    <link rel="canonical" href="{{ url |> url(true) }}">
-    <script src="/js/main.js" type="module"></script>
-    {{ it.extra_head?.join("\n") }}
-  </head>
-  <body>
-  <nav class="navbar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="supported-color-schemes" content="light dark">
+  <meta name="theme-color" content="hsl(220, 20%, 100%)" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="hsl(220, 20%, 10%)" media="(prefers-color-scheme: dark)">
+
+  <link id="highlight-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/rafty64.webp">
+  <link rel="canonical" href="{{ url |> url(true) }}">
+</head>
+
+<body>
+  <header>
+    <nav class="navbar">
       <ul class="navbar-links">
         <li>
-        <script>
-          let theme = localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light");
-          document.documentElement.dataset.theme = theme;
-          function changeTheme() {
-            theme = theme === "dark" ? "light" : "dark";
-            localStorage.setItem("theme", theme);
-            document.documentElement.dataset.theme = theme;
-          }
-        </script>
-        <button class="button" onclick="changeTheme()">
-          <span class="icon">◐</span>
-        </button>
-      </li>
+          <button class="button" onclick="changeTheme()">
+            <a class="fa fa-paint-brush" aria-hidden="true"></a>
+          </button>
+        </li>
+        <li>
+          <button class="button">
+            <a class="fa fa-edit" aria-hidden="true" href="https://github.com/sidosera/getrafty/blob/main/site/src/"
+              target="_blank"></a>
+          </button>
+        </li>
       </ul>
     </nav>
+  </header>
 
-    
-    <main>
-    <a href="/index.html">index</a>
-      {{ content }}
-    </main>
+  <main>
+    <h3>🚧 This is work in progress effort, many things are incomplete and unpolished (or even mistaken!).</h3>
+    <a href="/index">index</a>
+    {{ content }}
+  </main>
 
-    <!-- Current page: {{ url }} -->
-  </body>
+  <!-- Place scripts at the end for better performance -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+  
+  <!-- JavaScript -->
+  <script>
+    let theme = localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.dataset.theme = theme;
+
+    function setHighlightTheme(theme) {
+      const highlightThemeLink = document.getElementById('highlight-theme');
+      if (theme === 'dark') {
+        highlightThemeLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css';
+      } else {
+        highlightThemeLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css';
+      }
+    }
+
+    function changeTheme() {
+      theme = theme === "dark" ? "light" : "dark";
+      localStorage.setItem("theme", theme);
+      document.documentElement.dataset.theme = theme;
+      setHighlightTheme(theme);
+    }
+
+    // Set initial highlight theme
+    setHighlightTheme(theme);
+
+    hljs.highlightAll();
+  </script>
+</body>
+
 </html>
