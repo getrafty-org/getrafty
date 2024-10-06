@@ -23,19 +23,13 @@ In this class we will design a toy distributed file system from the very scratch
 ## Navigate
 
 
-[Getting Started](getting-started)
-
-[Hello World](hello-world)
-
-
-
-[FAQ](etc/faq)
+- [Getting Started](getting-started)
+- [Hello World](hello-world)
+- [FAQ](etc/faq)
 
 **Tooling**
-
-[Install Docker](etc/use-docker)
-
-[How to use this repository with VSCode](etc/use-vscode)
+- [Install Docker](etc/use-docker)
+- [How to use this repository with VSCode](etc/use-vscode)
 
 
 ## Contributing

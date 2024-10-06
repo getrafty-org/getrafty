@@ -53,13 +53,13 @@
 
 /* Make the links black */
 :root {
-  --color-link: #20609f;
+  --color-link: #3700ff;
   --color-link-hover: var(--color-dim);
   --gl-background-color-strong: #ececef;
 }
 
 [data-theme="dark"]:root {
-  --color-link: #2b79a2;
+  --color-link: #2890c8;
 }
 
 a {

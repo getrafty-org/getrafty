@@ -50,11 +50,11 @@ ssh ubuntu@localhost -p 3333
 ```
 
 ```
-# Conncet via Clippy
+# Connect via Clippy
 ./clippy.sh attach
 ```
 
-### Fist exercise
+### Jump to the fist exercise
 
-You're ready for the first exercise [hello-world](/hello-world).
+You're ready for the first exercise [hello-world](/hello-world) ;)
 
