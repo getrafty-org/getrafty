@@ -6,15 +6,40 @@
 
 
 /* Megaphone */
+
 .megaphone {
   color: #a3adc2;
+  text-align: center;
 }
 
 .megaphone-not-ready::before {
   content: "🚧 ";
 }
 
+/* Format */
+
+main>hr {
+  margin: auto;
+}
+
+li>p {
+  margin: auto;
+}
+
+/* Images */
+
+main>p>img {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* or 'cover' depending on your needs */
+  object-position: center;
+}
+
 /* Navbar */
+
 .navbar {
   display: flex;
   flex-wrap: wrap;
@@ -53,7 +78,7 @@
 
 /* Make the links black */
 :root {
-  --color-link: #3700ff;
+  --color-link: #014cc4;
   --color-link-hover: var(--color-dim);
   --gl-background-color-strong: #ececef;
 }
