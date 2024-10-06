@@ -5,38 +5,37 @@ layout: layout.vto
 
 # Let's Get Rafty
 
-> You don't have to be an engineer to be a racing driver, but you do have to have Mechanical Sympathy
-> – Jackie Stewart, racing driver.
+This project is a series of write-ups and exercises on distributed systems with a goal to build a curated list of exercise for hackers who enjoy building things. 
 
-This project is an open series of write-ups and exercises on distributed systems inspired by [MIT’s 6.824](https://pdos.csail.mit.edu/archive/6.824-2012/).
-
-The main motivation behind this project is simply the joy of building things. That said, I believe it will also be useful for anyone interested in learning more about distributed systems. What you create here is entirely yours — every line of code belongs to you.
-
-Please make sure to keep your repository private when forking. Avoid sharing solutions publicly. Thanks!
+Please keep your repository private when forking, and avoid sharing solutions publicly. Thanks ! ❤️
 
 
+![Scenes from distributed systems](/static/scenes.jpeg)
 
-## Goal
+*- [scenes from distributed systems, X (Twitter) author](https://x.com/b0rk/status/1056560207562711041).* 
 
-In this class we will design a toy distributed file system from the very scratch, step by step. Start with implementation of concurrency primitives and making they form bigger abstractions such as communication protocols and consensus algorithms.
+## What
 
-## Navigate
+This project features a range of exercises on distributed systems offering a grasp overview of the space. If you've ever been curious about how [distributed file systems](https://static.googleusercontent.com/media/research.google.com/en//archive/gfs-sosp2003.pdf) function or wanted to explore the inner workings of [your favorite RPC framework](https://en.wikipedia.org/wiki/Apache_Thrift). Then, it's the right place here because you will build a fully functioning toy version of that yourself
+
+Get ready, it will be fun ;)
+
+## Navigation
+
+- [How to work with this repository](getting-started)
+    - [Tutorial](hello-world)
 
 
-- [Getting Started](getting-started)
-- [Hello World](hello-world)
+- Misc.
+    - [Install Docker](etc/use-docker)
+    - [How to use this repository with VSCode](etc/use-vscode)
+
 - [FAQ](etc/faq)
-
-**Tooling**
-- [Install Docker](etc/use-docker)
-- [How to use this repository with VSCode](etc/use-vscode)
-
 
 ## Contributing
 
-I've started to write things here very recently, so the contents are very immature and incomplete. I am open to any suggestions and contributions.
+This is a very early exploration that is yet to be proved to be useful; the contents are very immature and incomplete.  If you want to contribute, **you are very welcome**! [File an issue](https://github.com/sidosera/getrafty/issues/new) and we will chat.  
 If you have found a bug, please create an issue (or pull request) [in the repository](https://github.com/sidosera/getrafty).
-If you have an idea of a new lab or task, great! Please create an issue with the idea, and we will discuss it.
 
 
 ## License
