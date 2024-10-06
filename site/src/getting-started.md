@@ -56,5 +56,5 @@ ssh ubuntu@localhost -p 3333
 
 ### Jump to the fist exercise
 
-You're ready for the first exercise [hello-world](/hello-world) ;)
+You're ready for the first exercise: [tutorial](/#navigation-) ;)
 

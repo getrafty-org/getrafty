@@ -10,17 +10,17 @@ This project is a series of write-ups and exercises on distributed systems with 
 Please keep your repository private when forking, and avoid sharing solutions publicly. Thanks ! ❤️
 
 
-![Scenes from distributed systems](/static/scenes.jpeg)
+![Scenes from distributed systems](/static/scenes-from-distributed-systems.webp)
 
 *- [scenes from distributed systems, X (Twitter) author](https://x.com/b0rk/status/1056560207562711041).* 
 
 ## What
 
-This project features a range of exercises on distributed systems offering a grasp overview of the space. If you've ever been curious about how [distributed file systems](https://static.googleusercontent.com/media/research.google.com/en//archive/gfs-sosp2003.pdf) function or wanted to explore the inner workings of [your favorite RPC framework](https://en.wikipedia.org/wiki/Apache_Thrift). Then, it's the right place here because you will build a fully functioning toy version of that yourself
+This project features a range of exercises on distributed systems offering a grasp overview of the space. If you've ever been curious about how [distributed file systems](https://static.googleusercontent.com/media/research.google.com/en//archive/gfs-sosp2003.pdf) function or wanted to explore the inner workings of [your favorite RPC framework](https://en.wikipedia.org/wiki/Apache_Thrift). Then, it's the right place here because you will build a fully functioning toy version of that yourself.
 
-Get ready, it will be fun ;)
+Get ready, it will be [fun](https://makeameme.org/meme/ohh-well-thisll)
 
-## Navigation
+## Navigation 🗺️
 
 - [How to work with this repository](getting-started)
     - [Tutorial](hello-world)
