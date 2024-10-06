@@ -6,7 +6,6 @@
 
 
 /* Megaphone */
-
 .megaphone {
   color: #a3adc2;
   text-align: center;
@@ -14,6 +13,33 @@
 
 .megaphone-not-ready::before {
   content: "🚧 ";
+}
+
+/* Anchor */
+
+.anchor-link {
+  position: relative;
+  color: var(--color-text);
+}
+
+.anchor-link:hover {
+  color: var(--color-text);
+}
+
+.anchor-link::before {
+  content: "\f292"; /* Unicode for Font Awesome hashtag icon */
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900; /* Required for solid icons */
+  position: absolute; /* Absolute positioning */
+  left: -1.25em; /* Adjust left as needed */
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none; /* Prevent interaction issues */
+  color: var(--anchor-tag-color);
+}
+
+.anchor-link:hover::before {
+  opacity: 1;
 }
 
 /* Format */
@@ -34,7 +60,8 @@ main>p>img {
   align-items: center;
   width: 100%;
   height: 100%;
-  object-fit: contain; /* or 'cover' depending on your needs */
+  object-fit: contain;
+  /* or 'cover' depending on your needs */
   object-position: center;
 }
 
@@ -81,10 +108,12 @@ main>p>img {
   --color-link: #014cc4;
   --color-link-hover: var(--color-dim);
   --gl-background-color-strong: #ececef;
+  --anchor-tag-color:#ececef;
 }
 
 [data-theme="dark"]:root {
   --color-link: #2890c8;
+  --anchor-tag-color:#28313f;
 }
 
 a {

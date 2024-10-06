@@ -8,7 +8,8 @@
   <meta name="theme-color" content="hsl(220, 20%, 100%)" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="hsl(220, 20%, 10%)" media="(prefers-color-scheme: dark)">
 
-  <link id="highlight-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+  <link id="highlight-theme" rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
     integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
@@ -37,7 +38,8 @@
   </header>
 
   <main>
-    <h4 class="megaphone megaphone-not-ready">This is a work in progress. Things are incomplete, unpolished, or possibly incorrect.</h4>
+    <h4 class="megaphone megaphone-not-ready">This is a work in progress. Things are incomplete, unpolished, or possibly
+      incorrect.</h4>
     <a href="/index">index</a>
     {{ content }}
   </main>
@@ -45,7 +47,7 @@
   <!-- Place scripts at the end for better performance -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
-  
+
   <!-- JavaScript -->
   <script>
     let theme = localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -71,6 +73,28 @@
     setHighlightTheme(theme);
 
     hljs.highlightAll();
+  </script>
+  <script>
+    /* Add anchors*/
+    document.addEventListener("DOMContentLoaded", function() {
+      var headers = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
+      Array.prototype.forEach.call(headers, function(header) {
+          if(header.id) {
+            return;
+          }
+          var text = header.textContent || header.innerText; // Fallback for older browsers
+          var slug = text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+          var anchor = document.createElement('a');
+
+          anchor.href = "#" + slug;
+          anchor.className = 'anchor-link';
+          anchor.textContent = text;
+
+          header.id = slug;
+          header.innerHTML = '';
+          header.appendChild(anchor);
+      });
+  });
   </script>
 </body>
 
