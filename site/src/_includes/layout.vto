@@ -2,15 +2,6 @@
 <html lang="en">
 
 <head>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-EJLH0E7CW0"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-EJLH0E7CW0');
-  </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="supported-color-schemes" content="light dark">
@@ -19,11 +10,9 @@
 
   <link id="highlight-theme" rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
-  <link rel="stylesheet" href="/static/styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
-    integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/static/rafty64.webp">
+  <link rel="stylesheet" href="/static/main.css">
+  <link rel="stylesheet" href="/static/icomoon.css">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/img/rafty64.webp">
   <link rel="canonical" href="{{ url |> url(true) }}">
 </head>
 
@@ -33,12 +22,12 @@
       <ul class="navbar-links">
         <li>
           <button class="button" onclick="changeTheme()">
-            <a class="fa fa-paint-brush" aria-hidden="true"></a>
+            <a class="icon icon-magic" aria-hidden="true"></a>
           </button>
         </li>
         <li>
           <button class="button">
-            <a class="fa fa-edit" aria-hidden="true" href="https://github.com/sidosera/getrafty/blob/main/site/src/"
+            <a class="icon icon-github" aria-hidden="true" href="https://github.com/sidosera/getrafty/blob/main/site/src/"
               target="_blank"></a>
           </button>
         </li>
@@ -49,7 +38,7 @@
   <main>
     <h4 class="megaphone megaphone-not-ready">This is a work in progress. Things are incomplete, unpolished, or possibly
       incorrect.</h4>
-    <a href="/index">index</a>
+    <a href="/index"> cd ~/</a>
     {{ content }}
   </main>
 
@@ -86,7 +75,7 @@
   <script>
     /* Add anchors*/
     document.addEventListener("DOMContentLoaded", function() {
-      var headers = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
+      var headers = document.querySelectorAll("h1, h2, h3 ");
       Array.prototype.forEach.call(headers, function(header) {
           if(header.id) {
             return;

@@ -39,3 +39,5 @@ yarn-error.log*
 .cache
 _site
 _cache
+
+.idea

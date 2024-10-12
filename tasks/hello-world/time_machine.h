@@ -2,13 +2,13 @@
 
 #include <cstdint>
 
-namespace bttf {
+namespace back_to_the_future {
 
-class DeLoreanTimeMachine {
+class Delorean {
 public:
-  uint32_t computeTimeTravelSpeed() const {
+  [[nodiscard]] uint32_t computeTimeTravelSpeed() const {
     return false; // Your code goes here
   }
 };
 
-} // namespace bttf
+} // namespace back_to_the_future

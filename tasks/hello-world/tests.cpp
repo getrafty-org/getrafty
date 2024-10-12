@@ -2,7 +2,7 @@
 #include <time_machine.h>
 
 TEST(DeLoreanTimeMachine, readyToTravelInTime) {
-  bttf::DeLoreanTimeMachine m;
+  back_to_the_future::Delorean time_machine;
 
-  EXPECT_EQ(88, m.computeTimeTravelSpeed());
+  EXPECT_EQ(88, time_machine.computeTimeTravelSpeed());
 }

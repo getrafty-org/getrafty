@@ -1,5 +1,6 @@
-# Deno
+# Deno runtime
 sh <(curl -fsSL https://deno.land/install.sh) '-y' > /dev/null 2>&1
+export PATH="/home/$USER/.deno/bin/:$PATH"
 
 # ------------------------------------------------------------------------------
 
@@ -12,9 +13,9 @@ fi
 
 # ------------------------------------------------------------------------------
 
-# Welcome
+# Login
 cat <<EOF
-Welcome to devvm container.
+Welcome to dev container.
 ===========================
 Type 'exit' to exit =)
 EOF

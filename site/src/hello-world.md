@@ -4,20 +4,20 @@ layout: layout.vto
 
 ## Tutorial
 
-### Goal
+Your goal is to complete the method `computeTimeTravelSpeed` in class `back_to_the_future::Delorean` in the file `time_machine.h`. 
 
-Your goal is to complete the method `computeTimeTravelSpeed` in class `DeLoreanTimeMachine` in the file `time_machine.h`. 
+The method should return the speed measured in mph of a DeLorean time machine [to be able to travel in time](https://en.wikipedia.org/wiki/DeLorean_time_machine#Operation).
 
-The method should return the speed measured in mph (miles per hour) of a delorean time machine [to be able to travel in time](https://www.reddit.com/r/forza/comments/bfcmoh/if_my_calculations_are_correct_when_this_baby/).
+##  Checking solution
 
-###  How to check solution
+Ensure your code pass clang-tidy lints.
 
-@TODO: Lints and formats.
+Run `clippy test` inside `~/workspace/tasks/hello-world/`
 
-Run `clippy test` inside `~/workspace/tasks/hello-world/` 
-
-```bash
-clippy test
+```shell
+$ cd ~/workspace/tasks/hello-world & clippy test
 ```
----
-If tests are passed, congrats! We're all done 🎉 
+
+Iterate on the change until tests are passed.
+
+
