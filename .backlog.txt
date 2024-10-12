@@ -1,0 +1,29 @@
+------------------------------------------------------------------------------------------------
+Backlog:
+------------------------------------------------------------------------------------------------
+    * [be] configure sanitizers, i have high degree of confidence there are might be several memory leaks in the code.
+
+    * [bugfix] event_watcher hangs infinitely due to a bug in thread pool implementation, make sure stop works correctly.
+        @: (DONE) write tests for queue.hpp
+        @: write tests for thread_pool.hpp
+
+    * [be] rethink design of connection <-> channel <-> rpc a little bit, the connection should just take a lambda / callback,
+           there should be no such a think as channel.
+
+        @: i.e. connection is used to write and read messages (size aware chunk of bytes)
+            and connection relies on event watcher no monitor sockets.
+
+        @: rpc uses connection in a way that it can directly send data via function call and receive data from the callback (which can be the rpc object itself)
+           the primary responsibility of rpc class is marshalling, retires and dedup. And ofc call user function.
+
+
+     * possible list of labs for rpc theme
+        @: implement thread pool or certain aspects of it as a foundation of the framework
+        @: implement message packing / unpacking and method calling semantic
+        @: flow control, reties and deduplication, i.e. perfect link over asynchronous network
+        @: testing via failure injection
+
+
+
+
+------------------------------------------------------------------------------------------------
