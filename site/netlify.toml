@@ -1,0 +1,3 @@
+[build.environment]
+DENO_VERSION = "2.0.4"
+
