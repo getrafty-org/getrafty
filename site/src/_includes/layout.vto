@@ -2,98 +2,156 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="supported-color-schemes" content="light dark">
-  <meta name="theme-color" content="hsl(220, 20%, 100%)" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="hsl(220, 20%, 10%)" media="(prefers-color-scheme: dark)">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="supported-color-schemes" content="light dark">
+    <meta name="theme-color" content="hsl(220, 20%, 100%)" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="hsl(220, 20%, 10%)" media="(prefers-color-scheme: dark)">
 
-  <link id="highlight-theme" rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-  <link rel="stylesheet" href="/static/main.css">
-  <link rel="stylesheet" href="/static/icomoon.css">
-  <link rel="icon" type="image/png" sizes="32x32" href="/static/img/rafty64.webp">
-  <link rel="canonical" href="{{ url |> url(true) }}">
+    <link id="highlight-theme" rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <link rel="stylesheet" href="/static/main.css">
+    <link rel="stylesheet" href="/static/icomoon.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/rafty64.webp">
+    <link rel="canonical" href="{{ url |> url(true) }}">
+    <title>Refactored Web Page</title>
 </head>
 
 <body>
-  <header>
+<header>
     <nav class="navbar">
-      <ul class="navbar-links">
-        <li>
-          <button class="button" onclick="changeTheme()">
-            <a class="icon icon-magic" aria-hidden="true"></a>
-          </button>
-        </li>
-        <li>
-          <button class="button">
-            <a class="icon icon-github" aria-hidden="true" href="https://github.com/sidosera/getrafty/blob/main/site/src/"
-              target="_blank"></a>
-          </button>
-        </li>
-      </ul>
+        <ul class="navbar-links">
+            <li>
+                <button class="button theme-toggle">
+                    <a class="icon icon-magic" aria-hidden="true"></a>
+                </button>
+            </li>
+            <li>
+                <button class="button">
+                    <a class="icon icon-github" aria-hidden="true"
+                       href="https://github.com/sidosera/getrafty/blob/main/site/src/"
+                       target="_blank"></a>
+                </button>
+            </li>
+        </ul>
     </nav>
-  </header>
+</header>
 
-  <main>
+<main>
     <h4 class="megaphone megaphone-not-ready">This is a work in progress. Things are incomplete, unpolished, or possibly
-      incorrect.</h4>
-    <a href="/index"> cd ~/</a>
+        incorrect.</h4>
+    <a href="/index">cd ~/</a>
     {{ content }}
-  </main>
+</main>
 
-  <!-- Place scripts at the end for better performance -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<!-- Place scripts at the end for better performance -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<script>
+    const lightThemeHighlight = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    const darkThemeHighlight = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
+    const darkBackgroundColor = { r: 13, g: 17, b: 23 };
+    const whiteThreshold = 230;
 
-  <!-- JavaScript -->
-  <script>
-    let theme = localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    document.documentElement.dataset.theme = theme;
 
-    function setHighlightTheme(theme) {
-      const highlightThemeLink = document.getElementById('highlight-theme');
-      if (theme === 'dark') {
-        highlightThemeLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
-      } else {
-        highlightThemeLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
-      }
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize theme
+        let theme = localStorage.getItem('theme') || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        setTheme(theme);
+        document.querySelector('.theme-toggle').addEventListener('click', () => {
+            theme = (theme === "dark") ? "light" : "dark";
+            setTheme(theme);
+        });
+        //
 
-    function changeTheme() {
-      theme = theme === "dark" ? "light" : "dark";
-      localStorage.setItem("theme", theme);
-      document.documentElement.dataset.theme = theme;
-      setHighlightTheme(theme);
-    }
+        // Add anchors
+        document.querySelectorAll("h1, h2, h3").forEach((header) => {
+            if (!header.id) {
+                const text = header.textContent || header.innerText;
+                const slug = text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+                header.id = slug;
 
-    // Set initial highlight theme
-    setHighlightTheme(theme);
+                const anchor = document.createElement('a');
+                anchor.href = `#${slug}`;
+                anchor.className = 'anchor-link';
+                anchor.textContent = text;
 
-    hljs.highlightAll();
-  </script>
-  <script>
-    /* Add anchors*/
-    document.addEventListener("DOMContentLoaded", function() {
-      var headers = document.querySelectorAll("h1, h2, h3 ");
-      Array.prototype.forEach.call(headers, function(header) {
-          if(header.id) {
-            return;
-          }
-          var text = header.textContent || header.innerText; // Fallback for older browsers
-          var slug = text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-          var anchor = document.createElement('a');
+                header.innerHTML = '';
+                header.appendChild(anchor);
+            }
+        });
+        //
 
-          anchor.href = "#" + slug;
-          anchor.className = 'anchor-link';
-          anchor.textContent = text;
+        function setTheme(currentTheme) {
+            document.documentElement.dataset.theme = currentTheme;
+            localStorage.setItem('theme', currentTheme);
+            document.getElementById('highlight-theme').href = currentTheme === 'dark' ? darkThemeHighlight : lightThemeHighlight;
 
-          header.id = slug;
-          header.innerHTML = '';
-          header.appendChild(anchor);
-      });
-  });
-  </script>
+            document.querySelectorAll('img').forEach((image) => {
+                if (!image.dataset.originalSrc) {
+                    image.dataset.originalSrc = image.src;
+                }
+
+                let canvas = image.nextElementSibling;
+                if (!canvas || canvas.tagName.toLowerCase() !== 'canvas') {
+                    canvas = document.createElement('canvas');
+                    canvas.className = 'imageCanvas';
+                    const styles = getComputedStyle(image);
+                    canvas.style.width = `${image.width}px`;
+                    canvas.style.height = `${image.height}px`;
+                    canvas.style.display = 'block';
+                    canvas.style.objectFit = styles.objectFit;
+                    canvas.style.maxWidth = styles.maxWidth;
+                    canvas.style.maxHeight = styles.maxHeight;
+                    image.parentNode.insertBefore(canvas, image.nextSibling);
+                }
+
+                const ctx = canvas.getContext('2d');
+                canvas.width = image.naturalWidth;
+                canvas.height = image.naturalHeight;
+
+                if (theme === "dark") {
+                    ctx.drawImage(image, 0, 0);
+                    applyDarkModeFilter(canvas, ctx);
+                    image.style.display = 'none';
+                    canvas.style.display = 'block';
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(image, 0, 0);
+                    canvas.style.display = 'none';
+                    image.style.display = 'block';
+                }
+            });
+
+            // Highlight.js
+            hljs.highlightAll();
+        }
+
+        function applyDarkModeFilter(canvas, ctx) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const red = data[i];
+                const green = data[i + 1];
+                const blue = data[i + 2];
+
+                if (red > whiteThreshold && green > whiteThreshold && blue > whiteThreshold) {
+                    data[i] = darkBackgroundColor.r;
+                    data[i + 1] = darkBackgroundColor.g;
+                    data[i + 2] = darkBackgroundColor.b;
+                } else {
+                    data[i] = 255 - red;
+                    data[i + 1] = 255 - green;
+                    data[i + 2] = 255 - blue;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+    });
+
+</script>
 </body>
 
 </html>
