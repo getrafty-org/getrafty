@@ -1,9 +1,0 @@
-[build]
-  command = "curl -fsSL https://deno.land/install.sh | sh -s v2.0.4 && deno run -A build_script.ts"
-  publish = "dist"
-
-[build.environment]
-  DENO_INSTALL = "/opt/buildhome/.deno"
-  PATH = "$DENO_INSTALL/bin:$PATH"
-
-
