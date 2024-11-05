@@ -1,0 +1,3 @@
+[submodule "getrafty-private"]
+	path = getrafty-private
+	url = git@github.com:sidosera/getrafty-private.git

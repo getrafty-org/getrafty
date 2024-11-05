@@ -4,6 +4,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
 
 set(LIBS_LIST "fmt;function2")
 
+
 if((CMAKE_BUILD_TYPE MATCHES Release) AND NOT TWIST_FAULTY)
     list(APPEND LIBS_LIST "mimalloc")
 endif()
@@ -20,7 +21,7 @@ function(add_task_executable BINARY_NAME)
     set(BINARY_SOURCES ${ARGN})
 
     add_executable(${BINARY_NAME} ${BINARY_SOURCES} ${TASK_SOURCES})
-    target_link_libraries(${BINARY_NAME} pthread GTest::gtest_main ${LIBS_LIST})
+    target_link_libraries(${BINARY_NAME} pthread GTest::gtest_main GTest::gmock_main ${LIBS_LIST})
     add_dependencies(${BINARY_NAME} ${LIBS_LIST})
 endfunction()
 
@@ -30,6 +31,8 @@ endfunction()
 
 macro(begin_task)
     set(TASK_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+    string(REPLACE "${CMAKE_SOURCE_DIR}/" "" RELATIVE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    set(PRIVATE_TASK_DIR "${CMAKE_SOURCE_DIR}/${PROJECT_NAME}-private/${RELATIVE_DIR}")
 
     get_filename_component(TASK_NAME ${TASK_DIR} NAME)
 
@@ -56,8 +59,33 @@ endmacro()
 # Sources
 
 macro(set_task_sources)
-    prepend(TASK_SOURCES "${TASK_DIR}/" ${ARGV})
+
+    # Iterate over each argument in ARGV (ARGV is a semicolon-separated list)
+    foreach(FILE ${ARGV})
+        # Get the file extension
+        get_filename_component(EXT "${FILE}" EXT)
+
+        # Check if the extension is .cpp, .cc, or .c
+        if(EXT STREQUAL ".cpp" OR EXT STREQUAL ".cc" OR EXT STREQUAL ".c")
+            # Check if a file with the same name exists in the OTHER_DIRECTORY
+            get_filename_component(FILENAME "${FILE}" NAME)
+
+
+            if(EXISTS "${PRIVATE_TASK_DIR}/${FILE}" AND ${INCLUDE_PRIVATE_SOURCES})
+                # Prepend the prefix pointing to the different directory
+                message("Adding task file from private impl: ${PRIVATE_TASK_DIR}/${FILE}")
+                prepend(TASK_SOURCES "${PRIVATE_TASK_DIR}/" ${FILE})
+            else()
+                message("@DBG: Adding original task file: ${TASK_DIR}/${FILE}")
+                prepend(TASK_SOURCES "${TASK_DIR}/" ${FILE})
+            endif()
+        endif()
+    endforeach()
+
+    # Assign the filtered sources to TASK_SOURCES without adding additional prefixing
+    set(TASK_SOURCES ${FILTERED_SOURCES} PARENT_SCOPE)
 endmacro()
+
 
 # --------------------------------------------------------------------
 
@@ -180,6 +208,7 @@ function(add_task_benchmark BINARY_NAME)
 endfunction()
 
 # --------------------------------------------------------------------
+
 
 # Epilogue
 

@@ -16,34 +16,26 @@ Please keep your repository private when forking, and avoid sharing solutions pu
 
 ## What
 
-This project features a range of exercises on distributed systems offering a grasp overview of the space. If you've ever been curious about how [distributed file systems](https://static.googleusercontent.com/media/research.google.com/en//archive/gfs-sosp2003.pdf) function or wanted to explore the inner workings of [your favorite RPC framework](https://en.wikipedia.org/wiki/Apache_Thrift). Then, it's the right place here because you will build a fully functioning toy version of that yourself.
+This is the project with an idea to feature a range of write-ups and exercises on distributed systems for beginners. It supposed to offer a grasp overview of the space. If you've ever been curious about how [distributed file systems](https://static.googleusercontent.com/media/research.google.com/en//archive/gfs-sosp2003.pdf) function or wanted to explore the inner workings of [your favorite RPC framework](https://en.wikipedia.org/wiki/Apache_Thrift). Then, it's the right place here because you will build a fully functioning toy version of that yourself.
 
 The exercises are mostly isolated units of work covering a particular topic. Each of the exercise comes with boilerplate implementation in C++ which you need to adjust. 
 
-Get ready, it will be [fun](https://makeameme.org/meme/ohh-well-thisll)
-
+Get ready 🍿
 
 
 ## Catch
 
-[Why do we need distributed systems?](https://brooker.co.za/blog/2020/01/02/why-distributed.html)
+[Why do we need distributed systems anyway?](https://brooker.co.za/blog/2020/01/02/why-distributed.html)
 
 ## Navigation 🗺️
 
 - [How to work with this repository](getting-started)
     - [Tutorial](hello-world)
-- Themes
-  - Making machines talk to each other 
-    - Reliable channel via RPC over asynchronous network
-    - Exactly once delivery
-    - Fault injection, deterministic testing of un-deterministic systems
-  - Remote filesystem
-    - What is filesystem by the way
-    - Protocol
-  - Consensus
-    - ABD algorithm
-    - Fault tolerance via atomic broadcast
-
+- Tasks
+  - 🔥 [Remote Procedure Calls | IO](/rpc-io)  
+  - 🚧 [Remote Procedure Calls | Calling functions](#)
+  - 🚧 [Filesystem | Accessing remotely over RPC](#)
+  - 🚧 [Filesystem | Surviving node failures](#)
 
 - Misc.
     - [Install Docker](etc/use-docker)
@@ -63,7 +55,7 @@ If you have found a bug, please create an issue (or pull request) [in the reposi
 The source and documentation are released under the [MIT License](https://github.com/sidosera/getrafty/blob/main/LICENSE).
 
 ---
-*Why the name "Getrafty"? That appeared to me as a funny game of words, one of the fundamental concept introduced in this class is the [Raft Consensus Algorithm](https://raft.github.io/)*.
+*Why the name is "Getrafty"? That appeared to me as a funny game of words. One of the crucial concept touched in the tutorials the [Raft Consensus Algorithm](https://raft.github.io/)*.
 
 
 

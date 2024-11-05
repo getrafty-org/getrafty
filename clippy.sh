@@ -6,7 +6,7 @@ DEVVM_BIND_DIR=$(pwd)
 DEVVM_SSH_PORT=3333
 DEVVM_WWW_PORT=3000
 
-# User to be used for idevvm login. This user is created automatically and ahs the same UID and GID as the user of the host which prevents may types of permissions issues.
+# User used for dev container login. This user is created automatically and ahs the same UID and GID as the user of the host which prevents may types of permissions issues.
 DEVVM_USER=ubuntu
 
 # Function to display error messages and exit
@@ -63,7 +63,6 @@ check_devvm_up() {
 
 # Default command function for printing a quick description of the CLI and list of supported commands.
 command_default() {
-    echo "Hi! I'm Clippy, your class assistant."
     if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         version=$(git rev-parse --short HEAD)
         echo "Version: $version"
@@ -94,7 +93,7 @@ command_boot() {
     check_docker_installed
 
     if check_devvm_up; then
-        echo "DevVM is up."
+        echo "Container is up."
         exit 0
     fi
 

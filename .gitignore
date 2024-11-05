@@ -41,3 +41,8 @@ _site
 _cache
 
 .idea
+
+# Solutions
+tasks/solutions
+
+.backlog.txt
