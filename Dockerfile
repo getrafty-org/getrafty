@@ -21,15 +21,14 @@ ARG DEPS=" \
     git \
     linux-tools-common \
     linux-tools-generic \
-    g++-12 \
-    clang-17 \
-    clang-format-17 \
-    clang-tidy-17 \
-    libclang-rt-17-dev \
-    libc++-17-dev \
-    libc++abi-17-dev \
-    clangd-17 \
-    lldb-17 \
+    clang-19 \
+    clang-format-19 \
+    clang-tidy-19 \
+    libclang-rt-19-dev \
+    libc++-19-dev \
+    libc++abi-19-dev \
+    clangd-19 \
+    lldb-19 \
     gdb \
     binutils-dev \
     libdwarf-dev \
@@ -40,6 +39,9 @@ ARG DEPS=" \
     autoconf \
     curl \
     unzip \
+    python3 \
+    python3-pip \
+    python3-venv \
 "
 
 RUN apt-get update -q && \
@@ -55,7 +57,7 @@ RUN apt-get update -q && \
     add-apt-repository "deb http://archive.ubuntu.com/ubuntu focal main universe restricted multiverse" && \
     add-apt-repository universe && \
     wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor | tee /etc/apt/trusted.gpg.d/llvm-snapshot.gpg > /dev/null && \
-    add-apt-repository -y "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-17 main" && \
+    add-apt-repository -y "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-19 main" && \
     wget -qO- https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/kitware-archive.gpg > /dev/null && \
     add-apt-repository 'deb https://apt.kitware.com/ubuntu/ focal main' && \
     apt-get update -q && \
