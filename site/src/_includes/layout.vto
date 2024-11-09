@@ -8,8 +8,21 @@
     <meta name="theme-color" content="hsl(220, 20%, 100%)" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="hsl(220, 20%, 10%)" media="(prefers-color-scheme: dark)">
 
-    <link id="highlight-theme" rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+            document.documentElement.dataset.theme = initialTheme;
+
+            const highlightTheme = initialTheme === 'dark'
+                ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css'
+                : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+            document.write(`<link id="highlight-theme" rel="stylesheet" href="${highlightTheme}">`);
+        })();
+    </script>
+
     <link rel="stylesheet" href="/static/main.css">
     <link rel="stylesheet" href="/static/icomoon.css">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/img/rafty64.webp">
@@ -34,7 +47,7 @@
                 </button>
             </li>
         </ul>
-    </nav>
+    </nav
 </header>
 
 <main>
@@ -50,16 +63,23 @@
         light: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css',
         dark: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css'
     };
-    const darkBackgroundColor = { r: 13, g: 17, b: 23 };
-    const whiteThreshold = 230;
+
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        document.querySelector('.theme-toggle').addEventListener('click', async () => {
+            await setThemeAsync(document.documentElement.dataset.theme === "dark" ? "light" : "dark")
+        });
+        const images = document.querySelectorAll('img');
+        await Promise.all([...images].map(async (image) => {
+            image.style.display = 'none';
+        }));
+    });
 
     window.addEventListener('load', async () => {
-        let theme = localStorage.getItem('theme') || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-
-        await setThemeAsync(theme);
-        document.querySelector('.theme-toggle').addEventListener('click', toggleTheme);
-
-        addAnchorsToHeaders();
+        await setThemeAsync(
+            localStorage.getItem('theme') ||
+            (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+        await addAnchorsToHeaders();
     });
 
     async function setThemeAsync(currentTheme) {
@@ -68,40 +88,51 @@
         document.getElementById('highlight-theme').href = themes[currentTheme];
 
         const images = Array.from(document.querySelectorAll('img'));
-        await setupImageCanvasesAsync(images, currentTheme);
+        await Promise.all(images.map(image => setupImageCanvasAsync(image, currentTheme)));
 
-        requestAnimationFrame(() => hljs.highlightAll());  // Syntax highlighting after canvas processing
+        requestAnimationFrame(() => hljs.highlightAll());
     }
 
-    async function setupImageCanvasesAsync(images, theme) {
-        await Promise.all(images.map(image => setupImageCanvasAsync(image, theme)));
-    }
 
-    async function setupImageCanvasAsync(image, theme) {
-        if (!image.dataset.originalSrc) image.dataset.originalSrc = image.src;
-
-        let canvas = image.nextElementSibling?.tagName === 'CANVAS' ? image.nextElementSibling : createCanvasForImage(image);
-        const ctx = canvas.getContext('2d');
+    async function getOrAttachCanvas(image) {
+        if (!image.dataset.originalSrc) {
+            image.dataset.originalSrc = image.src;
+        }
+        let canvas = image.nextElementSibling?.tagName === 'CANVAS' ? image.nextElementSibling : false;
+        if (canvas) {
+            return canvas;
+        }
+        canvas = document.createElement('canvas');
+        canvas.className = 'imageCanvas';
+        const styles = getComputedStyle(image);
+        Object.assign(canvas.style, {
+            width: styles.width,
+            height: styles.height,
+            display: 'block',
+            objectFit: styles.objectFit,
+            maxWidth: styles.maxWidth,
+            maxHeight: styles.maxHeight
+        });
+        image.parentNode.insertBefore(canvas, image.nextSibling);
         canvas.width = image.naturalWidth;
         canvas.height = image.naturalHeight;
+        return canvas;
+    }
 
+
+    async function setupImageCanvasAsync(image, theme) {
+        const canvas = await getOrAttachCanvas(image);
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, 0, 0);
+        image.style.display = 'none';
         if (theme === "dark") {
-            ctx.drawImage(image, 0, 0);
-            applyDarkModeFilter(ctx);
-            toggleDisplay(canvas, image);
-        } else {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(image, 0, 0);
-            toggleDisplay(image, canvas);
+            darkenImage(ctx);
         }
     }
 
-    function toggleTheme() {
-        let theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-        setThemeAsync(theme);
-    }
 
-    function addAnchorsToHeaders() {
+    async function addAnchorsToHeaders() {
         document.querySelectorAll("h1, h2, h3").forEach(header => {
             if (!header.id) {
                 const slug = header.textContent.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
@@ -118,45 +149,30 @@
         });
     }
 
-    function createCanvasForImage(image) {
-        const canvas = document.createElement('canvas');
-        canvas.className = 'imageCanvas';
-        const styles = getComputedStyle(image);
-        Object.assign(canvas.style, {
-            width: `${image.width}px`,
-            height: `${image.height}px`,
-            display: 'block',
-            objectFit: styles.objectFit,
-            maxWidth: styles.maxWidth,
-            maxHeight: styles.maxHeight
-        });
-        image.parentNode.insertBefore(canvas, image.nextSibling);
-        return canvas;
-    }
-
-    function applyDarkModeFilter(ctx) {
+    function darkenImage(ctx) {
         const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
         const data = imageData.data;
+        const darkR = 13, darkG = 17, darkB = 23;
+        const whiteThreshold = 230;
 
-        for (let i = 0; i < data.length; i += 4) {
-            if (data[i] > whiteThreshold && data[i + 1] > whiteThreshold && data[i + 2] > whiteThreshold) {
-                data[i] = darkBackgroundColor.r;
-                data[i + 1] = darkBackgroundColor.g;
-                data[i + 2] = darkBackgroundColor.b;
+        const length = data.length;
+        for (let i = 0; i < length; i += 4) {
+            const r = data[i], g = data[i + 1], b = data[i + 2];
+            // Weighted brightness using Rec. 709 formula
+            if (0.2126 * r + 0.7152 * g + 0.0722 * b > whiteThreshold) {
+                data[i] = darkR;
+                data[i + 1] = darkG;
+                data[i + 2] = darkB;
             } else {
-                data[i] = 255 - data[i];
-                data[i + 1] = 255 - data[i + 1];
-                data[i + 2] = 255 - data[i + 2];
+                data[i] = 255 - r;
+                data[i + 1] = 255 - g;
+                data[i + 2] = 255 - b;
             }
         }
 
         ctx.putImageData(imageData, 0, 0);
     }
 
-    function toggleDisplay(showElement, hideElement) {
-        showElement.style.display = 'block';
-        hideElement.style.display = 'none';
-    }
 </script>
 </body>
 </html>

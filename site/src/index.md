@@ -12,7 +12,7 @@ Please keep your repository private when forking, and avoid sharing solutions pu
 
 ![Scenes from distributed systems](/static/img/scenes-from-distributed-systems.webp)
 
-*- [scenes from distributed systems, X (Twitter) author](https://x.com/b0rk/status/1056560207562711041).* 
+*~ [scenes from distributed systems by Julia Evans, X (Twitter)](https://x.com/b0rk/status/1056560207562711041)* 
 
 ## What
 
@@ -31,11 +31,12 @@ Get ready 🍿
 
 - [How to work with this repository](getting-started)
     - [Tutorial](hello-world)
-- Tasks
-  - 🔥 [Remote Procedure Calls | IO](/rpc-io)  
-  - 🚧 [Remote Procedure Calls | Calling functions](#)
-  - 🚧 [Filesystem | Accessing remotely over RPC](#)
-  - 🚧 [Filesystem | Surviving node failures](#)
+- Index
+  - [Remote Procedure Calls @I. Thread pool](/thread-pool) 
+  - [Remote Procedure Calls @II. IO](/rpc-io)  
+  - 🚧 [Remote Procedure Calls @III. Calling functions](#)
+  - 🚧 [Filesystem @I.Accessing remotely over RPC](#)
+  - 🚧 [Filesystem @II. Surviving node failures](#)
 
 - Misc.
     - [Install Docker](etc/use-docker)

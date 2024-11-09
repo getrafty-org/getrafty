@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import os
 import subprocess
 
@@ -23,20 +24,40 @@ def check_docker_is_installed():
         error_exit("Docker is not installed. Please install Docker first.")
 
 
-def check_container_is_up():
-    """Check if the DevVM is running."""
+def check_container_exists():
+    """Check if a container with the same name exists."""
+    result = subprocess.run(
+        ["docker", "ps", "-a", "--filter", f"name={CONTAINER_NAME}", "--format", "{{.ID}}"],
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def check_container_is_running():
+    """Check if the container is running."""
     result = subprocess.run(
         ["docker", "ps", "--filter", f"name={CONTAINER_NAME}", "--format", "{{.ID}}"],
         capture_output=True,
         text=True,
     )
-    container_id = result.stdout.strip()
+    return result.stdout.strip()
+
+
+def remove_existing_container():
+    """Remove an existing container."""
+    container_id = check_container_exists()
     if container_id:
-        click.echo(f"Container {container_id} is already running on port {CONTAINER_SSH_PORT}.")
-        if click.confirm("Would you like to shutdown it?"):
-            subprocess.run(["docker", "stop", container_id])
-            subprocess.run(["docker", "rm", container_id])
-            return False
+        click.echo(f"Removing existing container {container_id}...")
+        subprocess.run(["docker", "rm", "-f", container_id], check=True)
+
+
+def restart_existing_container():
+    """Restart a stopped container."""
+    container_id = check_container_exists()
+    if container_id:
+        click.echo(f"Found existing container {container_id}. Restarting it...")
+        subprocess.run(["docker", "start", container_id], check=True)
         return True
     return False
 
@@ -53,18 +74,35 @@ def boot(build):
     """Build and run the development VM."""
     check_docker_is_installed()
 
-    if check_container_is_up():
-        click.echo("Container is up.")
-        return
-
     if build:
+        # Handle rebuild case
+        if check_container_is_running():
+            if click.confirm("The container is running. Do you want to stop and rebuild it?"):
+                remove_existing_container()
+            else:
+                click.echo("Exiting without rebuilding.")
+                return
+        else:
+            remove_existing_container()
+
+        # Remove image and rebuild
         result = subprocess.run(["docker", "images", CONTAINER_NAME, "-q"], capture_output=True, text=True)
         image_id = result.stdout.strip()
         if image_id:
             subprocess.run(["docker", "rmi", image_id], check=True)
         subprocess.run(["docker", "build", "-t", CONTAINER_NAME, "."], check=True)
+    else:
+        # Handle reuse case
+        if check_container_is_running():
+            click.echo("Container is up. Connect by running: `tasklet attach`.")
+            return
+
+        if restart_existing_container():
+            click.echo("Container restarted successfully. Connect by running: `tasklet attach`.")
+            return
 
     try:
+        # Start the container
         subprocess.run(
             [
                 "docker", "run", "-d",
@@ -97,7 +135,7 @@ def boot(build):
             check=True,
         )
 
-        click.echo("Connect by running: `tasklet attach`")
+        click.echo("Connect by running: `tasklet attach`.")
     except subprocess.CalledProcessError as e:
         error_exit(f"Failed to start container: {e}")
 
@@ -130,3 +168,4 @@ def attach(root):
 
 if __name__ == "__main__":
     cli()
+

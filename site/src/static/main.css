@@ -1209,7 +1209,7 @@ main > p > img {
 }
 
 [data-theme="dark"]:root {
-    --color-link: #2890c8;
+    --color-link: #7bccff;
     --anchor-tag-color: #28313f;
     --gl-background-color-strong: #28313f;
 }
