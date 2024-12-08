@@ -3,6 +3,8 @@
 #include <myfs_server.hpp>
 #include <sstream>
 
+
+
 namespace getrafty::myfs {
 
 void Server::run() {
@@ -129,6 +131,32 @@ void Server::run() {
     }
   };
 
+  ops.rmdir = [](fuse_req_t req, fuse_ino_t parent, const char* name) {
+    if (auto* self = static_cast<Server*>(fuse_req_userdata(req))) {
+      self->rmdir(req, parent, name);
+    } else {
+      fuse_reply_err(req, EIO);
+    }
+  };
+
+  ops.readdir = [](fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
+                   fuse_file_info* fi) {
+    if (auto* self = static_cast<Server*>(fuse_req_userdata(req))) {
+      self->readdir(req, ino, size, off, fi);
+    } else {
+      fuse_reply_err(req, EIO);
+    }
+  };
+
+  ops.getxattr = [](fuse_req_t req, fuse_ino_t ino, const char* name,
+                    size_t size) {
+    if (auto* self = static_cast<Server*>(fuse_req_userdata(req))) {
+      self->getxattr(req, ino, name, size);
+    } else {
+      fuse_reply_err(req, EIO);
+    }
+  };
+
   auto* se = fuse_session_new(&args, &ops, sizeof(ops), this);
   if (!se) {
     throw std::invalid_argument("fuse_session_new failed");
@@ -148,24 +176,25 @@ void Server::run() {
 }
 
 void Server::lookup(fuse_req_t req, fuse_ino_t parent, const char* name) {
-  std::lock_guard lock(fs_mutex_);
+  fuse_entry_param e{};
 
-  const auto parent_node = get_node(parent);
+  // std::lock_guard lock(fs_mutex_);
+
+  const auto parent_node = findInode(parent);
   if (!parent_node || !parent_node->is_directory_) {
-    fuse_reply_err(req, ENOTDIR);  // Parent is not a directory
+    fuse_reply_err(req, ENOTDIR);
     return;
   }
 
   auto it = parent_node->children_.find(name);
   if (it == parent_node->children_.end()) {
-    fuse_reply_err(req, ENOENT);  // File or directory not found
+    fuse_reply_err(req, ENOENT);
     return;
   }
 
   fuse_ino_t child_ino = it->second;
-  auto child_node = get_node(child_ino);
+  const auto child_node = findInode(child_ino);
 
-  fuse_entry_param e{};
   e.ino = child_ino;
   e.attr.st_mode =
       child_node->is_directory_ ? (S_IFDIR | 0755) : (S_IFREG | 0644);
@@ -179,28 +208,27 @@ void Server::lookup(fuse_req_t req, fuse_ino_t parent, const char* name) {
 }
 
 void Server::create(fuse_req_t req, fuse_ino_t parent, const char* name,
-                    mode_t mode, struct fuse_file_info* fi) {
-  std::lock_guard lock(fs_mutex_);
+                    mode_t mode, fuse_file_info* fi) {
+  // std::lock_guard lock(fs_mutex_);
 
-  const auto parent_node = get_node(parent);
+  const auto parent_node = findInode(parent);
   if (!parent_node || !parent_node->is_directory_) {
     fuse_reply_err(req, ENOTDIR);
     return;
   }
 
   if (parent_node->children_.contains(name)) {
-    fuse_reply_err(req, EEXIST);  // File already exists
+    fuse_reply_err(req, EEXIST);
     return;
   }
 
-  auto new_node = std::make_shared<FileNode>(false);
-  fuse_ino_t new_ino = allocate_inode(new_node);
-  parent_node->children_[name] = new_ino;
+  const auto new_ino = allocateInode(parent, false, name);
 
   fuse_entry_param e{};
   e.ino = new_ino;
   e.attr.st_mode = S_IFREG | (mode & 0777);  // File permissions
   e.attr.st_nlink = 1;
+  e.attr.st_size = 0;
   e.attr_timeout = 1.0;
   e.entry_timeout = 1.0;
 
@@ -208,9 +236,9 @@ void Server::create(fuse_req_t req, fuse_ino_t parent, const char* name,
 }
 
 void Server::unlink(fuse_req_t req, fuse_ino_t parent, const char* name) {
-  std::lock_guard lock(fs_mutex_);
+  // std::lock_guard lock(fs_mutex_);
 
-  const auto parent_node = get_node(parent);
+  const auto parent_node = findInode(parent);
   if (!parent_node || !parent_node->is_directory_) {
     fuse_reply_err(req, ENOTDIR);
     return;
@@ -218,7 +246,7 @@ void Server::unlink(fuse_req_t req, fuse_ino_t parent, const char* name) {
 
   auto it = parent_node->children_.find(name);
   if (it == parent_node->children_.end()) {
-    fuse_reply_err(req, ENOENT);  // File does not exist
+    fuse_reply_err(req, ENOENT);
     return;
   }
 
@@ -229,77 +257,102 @@ void Server::unlink(fuse_req_t req, fuse_ino_t parent, const char* name) {
   fuse_reply_err(req, 0);
 }
 
-void Server::open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info* fi) {
-  std::lock_guard lock(fs_mutex_);
+void Server::open(fuse_req_t req, fuse_ino_t ino, fuse_file_info* fi) {
+  // std::lock_guard lock(fs_mutex_);
 
-  const auto node = get_node(ino);
+  const auto node = findInode(ino);
   if (!node) {
-    fuse_reply_err(req, ENOENT);  // No such file
+    fuse_reply_err(req, ENOENT);
     return;
   }
 
   if (node->is_directory_) {
-    fuse_reply_err(req, EISDIR);  // Cannot open a directory
+    fuse_reply_err(req, EISDIR);
     return;
   }
 
-  fuse_reply_open(req, fi);  // Success
+  fuse_reply_open(req, fi);
 }
 
-void Server::readdir(fuse_req_t req, fuse_ino_t ino, size_t /*size*/, off_t /*off*/,
+void Server::readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
                      fuse_file_info* /*fi*/) {
-  std::lock_guard lock(fs_mutex_);
+  // std::lock_guard lock(fs_mutex_);
 
-  const auto node = get_node(ino);
+  const auto node = findInode(ino);
   if (!node || !node->is_directory_) {
-    fuse_reply_err(req, ENOTDIR);  // Not a directory
+    fuse_reply_err(req, ENOTDIR);
     return;
   }
 
-  std::string buffer;
-  for (const auto& [name, child_ino] : node->children_) {
-    struct stat st {};
-    st.st_ino = child_ino;
-    st.st_mode = get_node(child_ino)->is_directory_ ? S_IFDIR : S_IFREG;
+  std::vector<char> buf;
+  buf.reserve(size);
 
-    buffer.append(name);
-    buffer.push_back('\0');  // Null-terminate each entry
+  size_t pos = 0;
+
+  // Add `.` entry
+  if (off == 0) {
+    struct stat st {};
+    st.st_ino = ino;
+    st.st_mode = S_IFDIR | 0755;
+    pos += fuse_add_direntry(req, buf.data() + pos, size - pos, ".", &st, 1);
   }
 
-  fuse_reply_buf(req, buffer.data(), buffer.size());
+  // Add `..` entry
+  if (off <= 1) {
+    struct stat st {};
+    st.st_ino = node->parent_ino_;
+    st.st_mode = S_IFDIR | 0755;
+    pos += fuse_add_direntry(req, buf.data() + pos, size - pos, "..", &st, 2);
+  }
+
+  int current_offset = 2;  // Start after `.` and `..`
+  for (const auto& [name, child_ino] : node->children_) {
+    if (current_offset >= off) {
+      auto child_node = findInode(child_ino);
+      struct stat st {};
+      st.st_ino = child_ino;
+      st.st_mode = child_node->is_directory_ ? S_IFDIR : S_IFREG;
+      pos += fuse_add_direntry(req, buf.data() + pos, size - pos, name.c_str(),
+                               &st, current_offset + 1);
+
+      if (pos >= size) {
+        break;
+      }
+    }
+    current_offset++;
+  }
+
+  fuse_reply_buf(req, buf.data(), pos);
 }
 
 void Server::write(fuse_req_t req, fuse_ino_t ino, const char* buf, size_t size,
                    off_t off, fuse_file_info* /*fi*/) {
   std::lock_guard lock(fs_mutex_);
 
-  auto node = get_node(ino);
+  const auto node = findInode(ino);
   if (!node) {
-    fuse_reply_err(req, ENOENT);  // No such file
+    fuse_reply_err(req, ENOENT);
     return;
   }
 
   if (node->is_directory_) {
-    fuse_reply_err(req, EISDIR);  // Cannot write to a directory
+    fuse_reply_err(req, EISDIR);
     return;
   }
 
-  // Resize the file's data buffer if necessary
-  if (off + size > node->data_.size()) {
-    node->data_.resize(off + size);
+  size_t write_end = static_cast<size_t>(off) + size;
+  if (write_end > node->data_.size()) {
+    node->data_.resize(write_end, '\0');
   }
 
-  // Copy data to the file's buffer
+  // Write data to the file buffer
   std::memcpy(node->data_.data() + off, buf, size);
 
   fuse_reply_write(req, size);
 }
 
-void Server::statfs(fuse_req_t req, fuse_ino_t /*ino*/) {
-  constexpr size_t BLOCK_SIZE = 4096;               // Block size in bytes
-  constexpr size_t TOTAL_SPACE = 10 * 1024 * 1024;  // 10 MB total space
 
-  std::lock_guard lock(fs_mutex_);
+void Server::statfs(fuse_req_t req, fuse_ino_t /*ino*/) {
 
   // Calculate used space
   size_t used_space = 0;
@@ -327,11 +380,10 @@ void Server::statfs(fuse_req_t req, fuse_ino_t /*ino*/) {
   fuse_reply_statfs(req, &stat);
 }
 
-void Server::getattr(fuse_req_t req, fuse_ino_t ino,
-                     fuse_file_info* /*fi*/) {
-  std::lock_guard lock(fs_mutex_);
+void Server::getattr(fuse_req_t req, fuse_ino_t ino, fuse_file_info* /*fi*/) {
+  // std::lock_guard lock(fs_mutex_);
 
-  const auto node = get_node(ino);
+  const auto node = findInode(ino);
   if (!node) {
     fuse_reply_err(req, ENOENT);
     return;
@@ -340,24 +392,25 @@ void Server::getattr(fuse_req_t req, fuse_ino_t ino,
   struct stat stat {};
   stat.st_ino = ino;
   stat.st_mode = node->is_directory_ ? (S_IFDIR | 0755)
-                                    : (S_IFREG | 0644);  // File or directory
+                                     : (S_IFREG | 0644);  // File or directory
   stat.st_nlink = node->is_directory_ ? 2 + node->children_.size() : 1;
   stat.st_size = node->data_.size();
+
   fuse_reply_attr(req, &stat, 1.0);
 }
 
 void Server::read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
                   fuse_file_info* /*fi*/) {
-  std::lock_guard lock(fs_mutex_);
+  // std::lock_guard lock(fs_mutex_);
 
-  auto node = get_node(ino);
+  const auto node = findInode(ino);
   if (!node) {
-    fuse_reply_err(req, ENOENT);  // No such file
+    fuse_reply_err(req, ENOENT);
     return;
   }
 
   if (node->is_directory_) {
-    fuse_reply_err(req, EISDIR);  // Cannot read from a directory
+    fuse_reply_err(req, EISDIR);
     return;
   }
 
@@ -375,9 +428,9 @@ void Server::read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 void Server::mkdir(fuse_req_t req, fuse_ino_t parent, const char* name,
                    mode_t mode) {
-  std::lock_guard lock(fs_mutex_);
+  // std::lock_guard lock(fs_mutex_);
 
-  const auto parent_node = get_node(parent);
+  const auto parent_node = findInode(parent);
   if (!parent_node || !parent_node->is_directory_) {
     fuse_reply_err(req, ENOTDIR);
     return;
@@ -388,11 +441,9 @@ void Server::mkdir(fuse_req_t req, fuse_ino_t parent, const char* name,
     return;
   }
 
-  auto new_node =  std::make_shared<FileNode>(true);
-  fuse_ino_t new_ino = allocate_inode(new_node);
-  parent_node->children_[name] = new_ino;
+  const auto new_ino = allocateInode(parent, true, name);
 
-  struct fuse_entry_param e {};
+  fuse_entry_param e{};
   e.ino = new_ino;
   e.attr.st_mode = S_IFDIR | (mode & 0777);  // Directory permissions
   e.attr.st_nlink = 2;  // Directories have at least 2 links
@@ -402,42 +453,76 @@ void Server::mkdir(fuse_req_t req, fuse_ino_t parent, const char* name,
   fuse_reply_entry(req, &e);
 }
 
-void Server::setattr(fuse_req_t req, fuse_ino_t ino, struct stat* attr, int to_set, fuse_file_info* /*fi*/) {
-  std::lock_guard lock(fs_mutex_);
+void Server::rmdir(fuse_req_t req, fuse_ino_t parent, const char* name) {
+  // std::lock_guard lock(fs_mutex_);
 
-  // Find the node associated with the inode
-  auto node = get_node(ino);
+  auto parent_node = findInode(parent);
+  if (!parent_node || !parent_node->is_directory_) {
+    fuse_reply_err(req, ENOTDIR);
+    return;
+  }
+
+  auto it = parent_node->children_.find(name);
+  if (it == parent_node->children_.end()) {
+    fuse_reply_err(req, ENOENT);
+    return;
+  }
+
+  const fuse_ino_t child_ino = it->second;
+  auto child_node = findInode(child_ino);
+
+  if (!child_node || !child_node->is_directory_) {
+    fuse_reply_err(req, ENOTDIR);
+    return;
+  }
+
+  if (!child_node->children_.empty()) {
+    fuse_reply_err(req, ENOTEMPTY);
+    return;
+  }
+
+  forgetInode(child_ino);
+
+  fuse_reply_err(req, 0);
+}
+
+void Server::setattr(fuse_req_t req, fuse_ino_t ino, struct stat* attr,
+                     int to_set, fuse_file_info* /*fi*/) {
+  // std::lock_guard lock(fs_mutex_);
+
+  const auto node = findInode(ino);
   if (!node) {
-    fuse_reply_err(req, ENOENT); // No such file or directory
+    fuse_reply_err(req, ENOENT);  // No such file or directory
     return;
   }
 
   // Modify file size (truncate)
   if (to_set & FUSE_SET_ATTR_SIZE) {
     if (node->is_directory_) {
-      fuse_reply_err(req, EISDIR); // Cannot truncate a directory
+      fuse_reply_err(req, EISDIR);  // Cannot truncate a directory
       return;
     }
 
     if (attr->st_size < 0) {
-      fuse_reply_err(req, EINVAL); // Invalid size
+      fuse_reply_err(req, EINVAL);  // Invalid size
       return;
     }
 
-    node->data_.resize(attr->st_size); // Resize the file
+    node->data_.resize(attr->st_size);  // Resize the file
   }
 
   // Modify permissions (chmod)
   if (to_set & FUSE_SET_ATTR_MODE) {
     // Update permissions (only an example, as we're not enforcing permissions in-memory)
-    attr->st_mode = (node->is_directory_ ? S_IFDIR : S_IFREG) | (attr->st_mode & 0777);
+    attr->st_mode =
+        (node->is_directory_ ? S_IFDIR : S_IFREG) | (attr->st_mode & 0777);
   }
 
   // Modify other attributes (timestamps, owner, group, etc.)
   // Here we ignore them because this in-memory FS does not maintain them.
 
   // Reply with updated attributes
-  struct stat stbuf{};
+  struct stat stbuf {};
   stbuf.st_ino = ino;
   stbuf.st_mode = node->is_directory_ ? (S_IFDIR | 0755) : (S_IFREG | 0644);
   stbuf.st_nlink = node->is_directory_ ? 2 + node->children_.size() : 1;
@@ -445,5 +530,9 @@ void Server::setattr(fuse_req_t req, fuse_ino_t ino, struct stat* attr, int to_s
   fuse_reply_attr(req, &stbuf, 1.0);
 }
 
+void Server::getxattr(fuse_req_t req, fuse_ino_t /*ino*/, const char* /*name*/,
+                      size_t /*size*/) {
+  fuse_reply_err(req, ENOTSUP);
+}
 
 }  // namespace getrafty::myfs
