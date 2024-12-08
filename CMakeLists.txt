@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.29)
 
 project(getrafty)
 
+include(cmake/Development.cmake)
 include(cmake/Logging.cmake)
 include(cmake/Ccache.cmake)
 include(cmake/Helpers.cmake)
@@ -9,7 +10,6 @@ include(cmake/CheckCompiler.cmake)
 include(cmake/CompileOptions.cmake)
 include(cmake/Sanitize.cmake)
 include(cmake/Platform.cmake)
-include(cmake/Development.cmake)
 
 add_subdirectory(third-party)
 

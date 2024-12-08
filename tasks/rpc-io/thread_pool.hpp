@@ -5,7 +5,7 @@
 #include <functional>
 #include <thread>
 #include <vector>
-#include <queue.hpp>
+#include "queue.hpp"
 
 namespace getrafty::wheels::concurrent {
 
@@ -14,7 +14,7 @@ using Task = std::function<void()>;
 // Fixed-size pool of worker threads
 class ThreadPool {
  public:
-  explicit ThreadPool(size_t threads);
+  explicit ThreadPool(const size_t threads);
 
   ~ThreadPool();
 

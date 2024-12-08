@@ -1,20 +1,21 @@
-#include "thread_pool.hpp"
+#include <thread_pool.hpp>
 #include <gtest/gtest.h>
 #include <chrono>
 #include <latch>
 #include <thread>
+#include <wait_group.hpp>
 
 using namespace std::chrono_literals;
 using namespace getrafty::wheels::concurrent;
 
 TEST(ThreadPoolTest, JustWorks) {
   WaitGroup wg;
-  ThreadPool tp{4};
+  ThreadPool tp{1};
 
   tp.start();
 
+  wg.add(1);
   tp.submit([&] {
-    wg.add(1);
     std::cout << "Just works" << std::endl;
     wg.done();
   });
@@ -24,17 +25,16 @@ TEST(ThreadPoolTest, JustWorks) {
 }
 
 TEST(ThreadPoolTest, MultiWait) {
-  WaitGroup wg;
-  ThreadPool tp{1};
+  ThreadPool tp{4};
 
   tp.start();
 
   for (size_t i = 0; i < 3; ++i) {
+    WaitGroup wg;
     std::atomic<bool> done{false};
-
+    wg.add(1);
     tp.submit([&] {
-      wg.add(1);
-      std::this_thread::sleep_for(1s);
+      std::this_thread::sleep_for(100ms);
       done = true;
       wg.done();
     });
@@ -45,6 +45,8 @@ TEST(ThreadPoolTest, MultiWait) {
   }
 
   tp.stop();
+
+  ASSERT_TRUE(true);
 }
 
 TEST(ThreadPoolTest, Submit) {
@@ -58,8 +60,8 @@ TEST(ThreadPoolTest, Submit) {
   std::atomic<size_t> tasks{0};
 
   for (size_t i = 0; i < kTasks; ++i) {
+    wg.add(1);
     tp.submit([&] {
-      wg.add(1);
       ++tasks;
       wg.done();
     });
@@ -72,6 +74,16 @@ TEST(ThreadPoolTest, Submit) {
 }
 
 TEST(ThreadPoolTest, DoNotBurnCPU) {
+  struct StopWatch {
+    StopWatch() : start_ts_(std::clock()){};
+
+    [[nodiscard]] auto spent() const {
+      const size_t clocks = std::clock() - start_ts_;
+      return std::chrono::microseconds((clocks * 1000000) / CLOCKS_PER_SEC);
+    }
+    std::clock_t start_ts_;
+  };
+
   WaitGroup wg;
   ThreadPool tp{4};
 
@@ -79,31 +91,22 @@ TEST(ThreadPoolTest, DoNotBurnCPU) {
 
   // Warmup
   for (size_t i = 0; i < 4; ++i) {
-    tp.submit([&] { wg.add(1); std::this_thread::sleep_for(100ms); wg.wait(); });
+    wg.add(1);
+    tp.submit([&] {
+      std::this_thread::sleep_for(100ms);
+      wg.done();
+    });
   }
 
-  struct CpuTimer {
-    explicit CpuTimer() : start_ts_(std::clock()) {};
+  const StopWatch sw;
 
-    [[nodiscard]] auto spent() const {
-      const size_t clocks = std::clock() - start_ts_;
-      return std::chrono::microseconds((clocks * 1000000) / CLOCKS_PER_SEC);
-    }
-
-    std::clock_t start_ts_;
-  };
-
-  const CpuTimer t;
-
-  std::this_thread::sleep_for(1s);
-  
   wg.wait();
   tp.stop();
 
-  ASSERT_TRUE(t.spent() < 100ms);
+  ASSERT_TRUE(sw.spent() < 100ms);
 }
 
-TEST(ThreadPoolTest, Stop) {
+TEST(ThreadPoolTest, Lifetime) {
   struct Foo {
     Foo() : tp_(ThreadPool{1}) {
       tp_.start();

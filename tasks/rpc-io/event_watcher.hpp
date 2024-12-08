@@ -4,7 +4,7 @@
 #include <sys/select.h>
 #include <vector>
 #include <sys/epoll.h>
-#include <wheels/thread_pool.hpp>
+#include <thread_pool.hpp>
 
 using getrafty::wheels::concurrent::ThreadPool;
 
@@ -28,7 +28,7 @@ namespace getrafty::rpc::io {
 
     class EventWatcher {
     public:
-        explicit EventWatcher();
+        explicit EventWatcher(std::unique_ptr<ThreadPool> tp);
 
         explicit EventWatcher(
             std::unique_ptr<ThreadPool> tp,

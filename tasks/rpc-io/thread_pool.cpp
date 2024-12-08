@@ -3,7 +3,6 @@
 #include <thread_pool.hpp>
 
 namespace getrafty::wheels::concurrent {
-
 ThreadPool::ThreadPool(const size_t threads)
     : state_(NONE), worker_threads_count_(threads) {}
 

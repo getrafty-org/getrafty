@@ -59,27 +59,26 @@ endmacro()
 # Sources
 
 macro(set_task_sources)
-
     # Iterate over each argument in ARGV (ARGV is a semicolon-separated list)
     foreach(FILE ${ARGV})
         # Get the file extension
         get_filename_component(EXT "${FILE}" EXT)
 
         # Check if the extension is .cpp, .cc, or .c
-        if(EXT STREQUAL ".cpp" OR EXT STREQUAL ".cc" OR EXT STREQUAL ".c")
-            # Check if a file with the same name exists in the OTHER_DIRECTORY
-            get_filename_component(FILENAME "${FILE}" NAME)
-
-
-            if(EXISTS "${PRIVATE_TASK_DIR}/${FILE}" AND ${INCLUDE_PRIVATE_SOURCES})
-                # Prepend the prefix pointing to the different directory
-                message("Adding task file from private impl: ${PRIVATE_TASK_DIR}/${FILE}")
-                prepend(TASK_SOURCES "${PRIVATE_TASK_DIR}/" ${FILE})
-            else()
-                message("@DBG: Adding original task file: ${TASK_DIR}/${FILE}")
-                prepend(TASK_SOURCES "${TASK_DIR}/" ${FILE})
-            endif()
-        endif()
+#        if(EXT STREQUAL ".cpp" OR EXT STREQUAL ".hpp")
+#            # Check if a file with the same name exists in the OTHER_DIRECTORY
+#            get_filename_component(FILENAME "${FILE}" NAME)
+#
+#
+#            if(EXISTS "${PRIVATE_TASK_DIR}/${FILE}" AND ${INCLUDE_PRIVATE_SOURCES})
+#                # Prepend the prefix pointing to the different directory
+#                message("[private impl] Adding task file : ${PRIVATE_TASK_DIR}/${FILE}")
+#                prepend(TASK_SOURCES "${PRIVATE_TASK_DIR}/" ${FILE})
+#            else()
+#                message("Adding task file: ${TASK_DIR}/${FILE}")
+#                prepend(TASK_SOURCES "${TASK_DIR}/" ${FILE})
+#            endif()
+#        endif()
     endforeach()
 
     # Assign the filtered sources to TASK_SOURCES without adding additional prefixing
