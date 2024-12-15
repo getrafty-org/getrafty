@@ -1,0 +1,47 @@
+<idea-plugin>
+    <!-- Unique plugin identifier -->
+    <id>org.getrafty.snippy</id>
+
+    <!-- Display name of the plugin -->
+    <name>Snippy</name>
+
+    <!-- Vendor information -->
+    <vendor email="support@getrafty.org" url="https://getrafty.org">getrafty.org</vendor>
+
+    <!-- Plugin description -->
+    <description><![CDATA[
+        Tiny plugin for developers and maintainers of getrafty.org resource.<br/>
+        See <a href="https://github.com/sidosera/getrafty">GitHub</a> for more information.
+    ]]></description>
+
+    <!-- Dependency on the IntelliJ Platform -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- Specify compatibility with IntelliJ IDEA versions -->
+    <idea-version since-build="242.0" until-build="243.*"/>
+
+    <!-- Actions defined by the plugin -->
+    <actions>
+        <!-- Insert Marker Action -->
+        <action id="InsertSubstitutionMarker" class="org.getrafty.snippy.actions.InsertSnippetAction" text="Insert Snippet">
+            <add-to-group group-id="EditorPopupMenu" anchor="last" />
+        </action>
+
+        <!-- Toggle Mode Action -->
+        <action id="ToggleSnippetFocusAction" class="org.getrafty.snippy.actions.ToggleSnippetFocusAction" text="Toggle Snippet Focus">
+            <add-to-group group-id="EditorPopupMenu" anchor="last" />
+        </action>
+    </actions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <statusBarWidgetFactory id="sw" implementation="org.getrafty.snippy.status.ModeStatusWidgetFactory" />
+        <postStartupActivity implementation="org.getrafty.snippy.listeners.SnippetSaveListenerStartup" />
+    </extensions>
+
+    <projectListeners>
+        <listener class="org.getrafty.snippy.listeners.SnippetFileSaveListener"
+                  topic="com.intellij.openapi.fileEditor.FileDocumentManagerListener" />
+        \
+    </projectListeners>
+
+</idea-plugin>
