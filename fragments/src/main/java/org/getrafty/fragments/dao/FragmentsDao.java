@@ -3,6 +3,7 @@ package org.getrafty.fragments.dao;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
 import org.getrafty.fragments.config.FragmentsPluginConfig;
 import org.jetbrains.annotations.NotNull;
@@ -13,18 +14,18 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
-public class FragmentsDao {
+@Service(Service.Level.PROJECT)
+public final class FragmentsDao {
     public static final String FRAGMENT_ID = "id";
     public static final String FRAGMENT_METADATA = "metadata";
     public static final String FRAGMENT_VERSIONS = "versions";
-
-    private final static ThreadLocal<Gson> GSON = ThreadLocal.withInitial(Gson::new);
     public static final String FRAGMENT_CODE = "code";
 
+    private final static ThreadLocal<Gson> GSON = ThreadLocal.withInitial(Gson::new);
 
     private final Path snippetStorageDir;
 
-    public FragmentsDao(Project project) {
+    public FragmentsDao(@NotNull Project project) {
         var config = new FragmentsPluginConfig(project);
 
         this.snippetStorageDir = Path.of(Objects.requireNonNull(project.getBasePath()), config.getSnippetStoragePath());

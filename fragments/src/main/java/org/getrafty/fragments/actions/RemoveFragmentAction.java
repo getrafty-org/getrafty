@@ -39,7 +39,7 @@ public class RemoveFragmentAction extends AnAction {
         int caretOffset = editor.getCaretModel().getOffset();
         String text = document.getText();
 
-        // Regex to match a snippet block
+        // TODO: Extract to fragment parser
         Pattern pattern = Pattern.compile("// ==== YOUR CODE: @(.*?) ====(.*?)// ==== END YOUR CODE ====", Pattern.DOTALL);
         Matcher matcher = pattern.matcher(text);
 
@@ -55,7 +55,7 @@ public class RemoveFragmentAction extends AnAction {
                     document.deleteString(start, end);
                 });
 
-                snippetIndexService.removeSnippet(hash, file);
+                snippetIndexService.forgetFragmentEntryForFile(hash, file);
                 return;
             }
         }

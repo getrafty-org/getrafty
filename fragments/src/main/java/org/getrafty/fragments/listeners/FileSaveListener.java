@@ -5,25 +5,22 @@ import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import org.getrafty.fragments.FragmentUtils;
 import org.getrafty.fragments.services.FragmentsIndex;
 import org.getrafty.fragments.services.FragmentsManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static org.getrafty.fragments.FragmentUtils.FRAGMENT_PATTERN;
 
 public class FileSaveListener implements FileDocumentManagerListener {
-    private static final Pattern SNIPPET_PATTERN = Pattern.compile(
-            "// ==== YOUR CODE: @(.*?) ====(.*?)// ==== END YOUR CODE ====",
-            Pattern.DOTALL
-    );
-
-    private final FragmentsManager snippetService;
-    private final FragmentsIndex snippetIndexService;
+    private final FragmentsManager fragmentsManager;
+    private final FragmentsIndex fragmentsIndex;
 
     public FileSaveListener(@NotNull Project project) {
-        this.snippetService = project.getService(FragmentsManager.class);
-        this.snippetIndexService = project.getService(FragmentsIndex.class);
+        this.fragmentsManager = project.getService(FragmentsManager.class);
+        this.fragmentsIndex = project.getService(FragmentsIndex.class);
     }
 
     @Override
@@ -33,14 +30,15 @@ public class FileSaveListener implements FileDocumentManagerListener {
 
         if (file == null) return;
 
-        FragmentsIndexUtils.reindexFile(file, snippetIndexService);
+        FragmentUtils.reindexFile(file, fragmentsIndex);
 
-        Matcher matcher = SNIPPET_PATTERN.matcher(text);
+        // TODO: Extract to fragment parser
+        Matcher matcher = FRAGMENT_PATTERN.matcher(text);
 
         while (matcher.find()) {
-            String hash = matcher.group(1).trim();
-            String snippetContent = matcher.group(2);
-            snippetService.saveSnippet(hash, snippetContent);
+            var fragmentId = matcher.group(1).trim();
+            var fragmentCode = matcher.group(2);
+            fragmentsManager.saveFragment(fragmentId, fragmentCode);
         }
     }
 }

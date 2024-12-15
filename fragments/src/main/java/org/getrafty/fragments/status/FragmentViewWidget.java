@@ -11,11 +11,7 @@ import java.awt.*;
 public class FragmentViewWidget implements StatusBarWidget, StatusBarWidget.TextPresentation {
     public static final String FRAGMENT_VIEW_WIDGET = "FragmentViewWidget";
 
-    private final FragmentsManager fragmentsManager;
-
-    public FragmentViewWidget(@NotNull Project project) {
-        this.fragmentsManager = project.getService(FragmentsManager.class);
-    }
+    public FragmentViewWidget(@NotNull Project project) {}
 
     @NotNull
     @Override
@@ -32,9 +28,8 @@ public class FragmentViewWidget implements StatusBarWidget, StatusBarWidget.Text
     @NotNull
     @Override
     public String getText() {
-        return "Fragment view: " + (fragmentsManager.isMaintainerMode() ? "Maintainer" : "User");
+        return "Fragment view: " + (FragmentsManager.CURRENT_FRAGMENT_VERSION.name());
     }
-
 
     @Nullable
     @Override

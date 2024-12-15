@@ -11,11 +11,10 @@ import com.intellij.openapi.ui.Messages;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static org.getrafty.fragments.FragmentUtils.FRAGMENT_PATTERN;
 
 public class InsertFragmentAction extends AnAction {
-
-    private static final Pattern SNIPPET_PATTERN = Pattern.compile("// ==== YOUR CODE: @(.*?) ====(.*?)// ==== END YOUR CODE ====", Pattern.DOTALL);
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent event) {
@@ -52,7 +51,7 @@ public class InsertFragmentAction extends AnAction {
 
     private boolean isCaretInsideSnippet(@NotNull Document document, int caretOffset) {
         String text = document.getText();
-        Matcher matcher = SNIPPET_PATTERN.matcher(text);
+        Matcher matcher = FRAGMENT_PATTERN.matcher(text);
 
         while (matcher.find()) {
             int snippetStart = matcher.start(2); // Start of snippet content

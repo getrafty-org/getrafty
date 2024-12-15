@@ -1,5 +1,6 @@
 package org.getrafty.fragments.config;
 
+import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
 
 import java.io.IOException;
@@ -8,7 +9,8 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Properties;
 
-public class FragmentsPluginConfig {
+@Service(Service.Level.PROJECT)
+public final class FragmentsPluginConfig {
     private static final String CONFIG_FILE_NAME = ".fragments.cfg";
     private static final String DEFAULT_FRAGMENTS_FOLDER = ".fragments";
     public static final String PROP_FRAGMENTS_STORAGE_FOLDER = "fragments.folder";
