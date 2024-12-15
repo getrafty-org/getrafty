@@ -18,23 +18,27 @@ public class InsertFragmentAction extends AnAction {
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent event) {
-        Editor editor = event.getData(com.intellij.openapi.actionSystem.CommonDataKeys.EDITOR);
-        Project project = event.getProject();
+        var editor = event.getData(com.intellij.openapi.actionSystem.CommonDataKeys.EDITOR);
+        var project = event.getProject();
 
         if (editor == null || project == null) {
             Messages.showErrorDialog("No active editor or project found!", "Error");
             return;
         }
 
-        Document document = editor.getDocument();
-        Caret caret = editor.getCaretModel().getCurrentCaret();
+        var document = editor.getDocument();
+        var caret = editor.getCaretModel().getCurrentCaret();
         int caretOffset = caret.getOffset();
+        int lineNumber = document.getLineNumber(caretOffset);
 
         // Check if the caret is inside an existing snippet
         if (isCaretInsideSnippet(document, caretOffset)) {
             Messages.showErrorDialog("Fragments can't overlap", "Error");
             return;
         }
+
+        // Ensure the caret is at the beginning of a new line
+        caretOffset = document.getLineEndOffset(lineNumber);
 
         // Generate a unique hash for the marker
         String hash = generateHash();
@@ -44,8 +48,10 @@ public class InsertFragmentAction extends AnAction {
         String endMarker = "// ==== END YOUR CODE ====\n";
 
         // Insert the markers into the document
+        int finalCaretOffset = caretOffset;
         WriteCommandAction.runWriteCommandAction(project, () -> {
-            document.insertString(caretOffset, startMarker + "\n" + endMarker);
+            String insertionText = "\n" + startMarker + "\n" + endMarker;
+            document.insertString(finalCaretOffset, insertionText);
         });
     }
 

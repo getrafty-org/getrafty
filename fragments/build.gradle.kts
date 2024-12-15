@@ -1,8 +1,10 @@
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 
 plugins {
-    java
-    id("org.jetbrains.intellij.platform") version "2.1.0"
+    id("java")
+    id("idea")
+    id("org.jetbrains.intellij.platform") version "2.2.1"
 }
 
 group = "org.getrafty"
@@ -16,16 +18,12 @@ repositories {
 }
 
 dependencies {
-    testImplementation("junit:junit:4.13.2")
-
     intellijPlatform {
-        create("IU", "2024.1.1")
-
-        instrumentationTools()
-
-        testFramework(TestFrameworkType.Platform)
-        testFramework(TestFrameworkType.JUnit5)
+        create(IntelliJPlatformType.CLion, "2024.2.1") // Target CLion version
+        testFramework(TestFrameworkType.Platform) // IntelliJ Platform-specific test framework
     }
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito:mockito-core:5.5.0")
 }
 
 val publishToken: String by project
@@ -36,17 +34,10 @@ intellijPlatform {
     }
     pluginConfiguration {
         ideaVersion {
-            // Let the Gradle plugin set the since-build version. It defaults to the version of the IDE we're building against
-            // specified as two components, `{branch}.{build}` (e.g., "241.15989"). There is no third component specified.
-            // The until-build version defaults to `{branch}.*`, but we want to support _all_ future versions, so we set it
-            // with a null provider (the provider is important).
-            // By letting the Gradle plugin handle this, the Plugin DevKit IntelliJ plugin cannot help us with the "Usage of
-            // IntelliJ API not available in older IDEs" inspection. However, since our since-build is the version we compile
-            // against, we can never get an API that's newer - it would be an unresolved symbol.
+            // Use the since-build of the CLion version
             untilBuild.set(provider { null })
         }
     }
-
 }
 
 java {
@@ -57,11 +48,18 @@ java {
 }
 
 tasks {
+    test {
+        useJUnit() // Forces Gradle to use JUnit 4
+        testLogging {
+            events("PASSED", "FAILED", "SKIPPED")
+        }
+    }
+
     wrapper {
-        gradleVersion = gradleVersion
+        gradleVersion = "8.11" // Ensure compatibility with the IntelliJ Gradle plugin
     }
 
     runIde {
-        jvmArgs("-Xmx16G")
+        jvmArgs("-Xmx16G") // Set JVM arguments for IDE debugging
     }
 }

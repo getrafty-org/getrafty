@@ -1,5 +1,6 @@
 package org.getrafty.fragments.listeners;
 
+import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.Project;
@@ -14,6 +15,7 @@ public class PostStartupPluginListener implements ProjectActivity {
 
     @Override
     public @Nullable Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
+        // Register listeners for file save and open events
         project.getMessageBus().connect().subscribe(
                 FileDocumentManagerListener.TOPIC,
                 new FileSaveListener(project)
@@ -23,11 +25,14 @@ public class PostStartupPluginListener implements ProjectActivity {
                 .connect()
                 .subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new FileOpenListener(project));
 
-        // Register SnippetFileChangeListener for file creation, deletion, and modification
+        // Register file change listener
         VirtualFileManager.getInstance().addVirtualFileListener(
                 new FileChangeListener(project),
                 project
         );
+
+        // Register the editor listener for caret movements
+        EditorFactory.getInstance().addEditorFactoryListener(new EditorListener(project), project);
 
         return Unit.INSTANCE;
     }
