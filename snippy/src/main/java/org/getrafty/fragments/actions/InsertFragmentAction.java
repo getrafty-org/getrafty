@@ -1,4 +1,4 @@
-package org.getrafty.snippy.actions;
+package org.getrafty.fragments.actions;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class InsertSnippetAction extends AnAction {
+public class InsertFragmentAction extends AnAction {
 
     private static final Pattern SNIPPET_PATTERN = Pattern.compile("// ==== YOUR CODE: @(.*?) ====(.*?)// ==== END YOUR CODE ====", Pattern.DOTALL);
 
@@ -33,7 +33,7 @@ public class InsertSnippetAction extends AnAction {
 
         // Check if the caret is inside an existing snippet
         if (isCaretInsideSnippet(document, caretOffset)) {
-            Messages.showErrorDialog("Cannot insert a snippet inside an existing snippet!", "Error");
+            Messages.showErrorDialog("Fragments can't overlap", "Error");
             return;
         }
 

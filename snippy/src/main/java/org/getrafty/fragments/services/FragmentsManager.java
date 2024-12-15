@@ -1,41 +1,27 @@
-package org.getrafty.snippy.services;
+package org.getrafty.fragments.services;
 
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.command.WriteCommandAction;
-import org.getrafty.snippy.dao.SnippetDao;
-import org.getrafty.snippy.utils.SnippetRegistry;
+import org.getrafty.fragments.dao.FragmentsDao;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service(Service.Level.PROJECT)
-public final class SnippetService {
-    private final SnippetDao snippetDao;
+public final class FragmentsManager {
+    private final FragmentsDao fragmentsDao;
     private boolean isMaintainerMode = false; // Default mode
 
-    public SnippetService(com.intellij.openapi.project.Project project) {
-        this.snippetDao = new SnippetDao(project);
+    public FragmentsManager(com.intellij.openapi.project.Project project) {
+        this.fragmentsDao = new FragmentsDao(project);
     }
 
     public void saveSnippet(String hash, String content) {
         String mode = isMaintainerMode ? "maintainer" : "user";
-        snippetDao.saveSnippet(hash, content, mode);
+        fragmentsDao.saveFragment(hash, content, mode);
     }
 
-
-    public void initializeSnippets(Document document) {
-        String text = document.getText();
-
-        // Regex to find all snippet IDs
-        Pattern pattern = Pattern.compile("// ==== YOUR CODE: @(.*?) ====", Pattern.DOTALL);
-        Matcher matcher = pattern.matcher(text);
-
-        while (matcher.find()) {
-            String snippetId = matcher.group(1); // Extract the snippet ID
-            SnippetRegistry.registerSnippet(snippetId); // Register the snippet
-        }
-    }
 
     public void reloadSnippets(Document document) {
         String text = document.getText();
@@ -67,7 +53,7 @@ public final class SnippetService {
 
     public String loadSnippet(String snippetId) {
         String mode = isMaintainerMode ? "maintainer" : "user";
-        return snippetDao.loadSnippet(snippetId, mode);
+        return fragmentsDao.findFragment(snippetId, mode);
     }
 
     public void toggleMode() {

@@ -1,16 +1,16 @@
 <idea-plugin>
     <!-- Unique plugin identifier -->
-    <id>org.getrafty.snippy</id>
+    <id>org.getrafty.fragments</id>
 
     <!-- Display name of the plugin -->
-    <name>Snippy</name>
+    <name>Fragments</name>
 
     <!-- Vendor information -->
     <vendor email="support@getrafty.org" url="https://getrafty.org">getrafty.org</vendor>
 
     <!-- Plugin description -->
     <description><![CDATA[
-        Tiny plugin for developers and maintainers of getrafty.org resource.<br/>
+        Fragments is a tiny plugin for developers and maintainers of getrafty.org resource.<br/>
         See <a href="https://github.com/sidosera/getrafty">GitHub</a> for more information.
     ]]></description>
 
@@ -20,26 +20,27 @@
     <!-- Specify compatibility with IntelliJ IDEA versions -->
     <idea-version since-build="242.0" until-build="243.*"/>
 
-    <!-- Actions defined by the plugin -->
     <actions>
-        <!-- Insert Marker Action -->
-        <action id="InsertSubstitutionMarker" class="org.getrafty.snippy.actions.InsertSnippetAction" text="Insert Snippet">
+        <action id="AddFragment" class="org.getrafty.fragments.actions.InsertFragmentAction" text="Add Fragment">
             <add-to-group group-id="EditorPopupMenu" anchor="last" />
         </action>
 
-        <!-- Toggle Mode Action -->
-        <action id="ToggleSnippetFocusAction" class="org.getrafty.snippy.actions.ToggleSnippetFocusAction" text="Toggle Snippet Focus">
+        <action id="SwitchFragmentView" class="org.getrafty.fragments.actions.ToggleFragmentsViewAction" text="Switch Fragment View">
+            <add-to-group group-id="EditorPopupMenu" anchor="last" />
+        </action>
+
+        <action id="RemoveFragment" class="org.getrafty.fragments.actions.RemoveFragmentAction" text="Remove Fragment">
             <add-to-group group-id="EditorPopupMenu" anchor="last" />
         </action>
     </actions>
 
     <extensions defaultExtensionNs="com.intellij">
-        <statusBarWidgetFactory id="sw" implementation="org.getrafty.snippy.status.ModeStatusWidgetFactory" />
-        <postStartupActivity implementation="org.getrafty.snippy.listeners.SnippetSaveListenerStartup" />
+        <statusBarWidgetFactory id="sw" implementation="org.getrafty.fragments.status.FragmentViewWidgetFactory" />
+        <postStartupActivity implementation="org.getrafty.fragments.listeners.PostStartupPluginListener" />
     </extensions>
 
     <projectListeners>
-        <listener class="org.getrafty.snippy.listeners.SnippetFileSaveListener"
+        <listener class="org.getrafty.fragments.listeners.FileSaveListener"
                   topic="com.intellij.openapi.fileEditor.FileDocumentManagerListener" />
         \
     </projectListeners>

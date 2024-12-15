@@ -1,22 +1,23 @@
-package org.getrafty.snippy.status;
+package org.getrafty.fragments.status;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.StatusBarWidget;
 import com.intellij.openapi.wm.StatusBarWidgetFactory;
 import org.jetbrains.annotations.NotNull;
 
-public class ModeStatusWidgetFactory implements StatusBarWidgetFactory {
+public class FragmentViewWidgetFactory implements StatusBarWidgetFactory {
+    public static final String FRAGMENT_VIEW_WIDGET_FACTORY = "FragmentViewWidgetFactory";
 
     @NotNull
     @Override
     public String getId() {
-        return "SnippetModeWidget";
+        return FRAGMENT_VIEW_WIDGET_FACTORY;
     }
 
     @NotNull
     @Override
     public String getDisplayName() {
-        return "Snippet Mode";
+        return "Fragment View";
     }
 
     @Override
@@ -27,7 +28,7 @@ public class ModeStatusWidgetFactory implements StatusBarWidgetFactory {
     @NotNull
     @Override
     public StatusBarWidget createWidget(@NotNull Project project) {
-        return new ModeStatusWidget(project); // Returns a valid StatusBarWidget
+        return new FragmentViewWidget(project);
     }
 
     @Override
