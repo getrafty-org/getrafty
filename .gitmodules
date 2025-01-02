@@ -2,3 +2,6 @@
 	path = getrafty-private
 	url = git@github.com:sidosera/getrafty-private.git
 
+[submodule "site"]
+	path = site
+	url = git@github.com:getrafty-org/site.git
