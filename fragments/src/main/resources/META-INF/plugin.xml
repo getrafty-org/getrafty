@@ -36,14 +36,10 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <statusBarWidgetFactory id="sw" implementation="org.getrafty.fragments.status.FragmentViewWidgetFactory" />
-        <postStartupActivity implementation="org.getrafty.fragments.listeners.PostStartupPluginListener" />
+        <postStartupActivity implementation="org.getrafty.fragments.listeners.OnProjectOpened" />
     </extensions>
 
     <projectListeners>
-        <listener class="org.getrafty.fragments.listeners.FileSaveListener"
-                  topic="com.intellij.openapi.fileEditor.FileDocumentManagerListener" />
-        <listener class="org.getrafty.fragments.listeners.FragmentCaretListener"
-                  topic="com.intellij.openapi.editor.event.EditorFactoryListener"/>
     </projectListeners>
 
 </idea-plugin>

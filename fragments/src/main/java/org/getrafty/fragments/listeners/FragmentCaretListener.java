@@ -8,12 +8,16 @@ import com.intellij.ui.JBColor;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
+import java.util.Objects;
 
 import static org.getrafty.fragments.FragmentUtils.FRAGMENT_PATTERN;
 
 public class FragmentCaretListener implements CaretListener {
+    public static final Color REGULAR = new Color(204, 237, 255, 30);
+    public static final Color DARK = new Color(80, 104, 119);
 
     private final Editor editor;
+
     private RangeHighlighter currentHighlighter;
 
     public FragmentCaretListener(Editor editor) {
@@ -23,7 +27,7 @@ public class FragmentCaretListener implements CaretListener {
     @Override
     public void caretPositionChanged(@NotNull CaretEvent event) {
         var document = editor.getDocument();
-        var caretOffset = event.getCaret().getOffset();
+        var caretOffset = Objects.requireNonNull(event.getCaret()).getOffset();
         var text = document.getText();
 
         // Find if the caret is inside a fragment
@@ -55,7 +59,7 @@ public class FragmentCaretListener implements CaretListener {
 
         // Add new highlighter for the fragment
         TextAttributes attributes = new TextAttributes();
-        attributes.setBackgroundColor(new JBColor(new Color(204, 237, 255, 30), new Color(80, 104, 119))); // Light orange for light theme, dark brown for dark theme
+        attributes.setBackgroundColor(new JBColor(REGULAR, DARK));
         attributes.setEffectType(EffectType.BOXED);
 
         currentHighlighter = markupModel.addRangeHighlighter(

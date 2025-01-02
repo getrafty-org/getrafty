@@ -27,6 +27,8 @@ public final class FragmentCollisionHighlighter {
         VirtualFile file = editor.getVirtualFile();
         if (file == null) return;
 
+        clearHighlights(editor);
+
         MarkupModel markupModel = editor.getMarkupModel();
 
         fragmentsIndex.findAllFragmentEntries().forEach((hash, fileOccurrences) -> {

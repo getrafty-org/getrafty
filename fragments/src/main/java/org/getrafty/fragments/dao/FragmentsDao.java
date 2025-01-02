@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
-import org.getrafty.fragments.config.FragmentsPluginConfig;
+import org.getrafty.fragments.config.PluginConfig;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -23,15 +23,15 @@ public final class FragmentsDao {
 
     private final static ThreadLocal<Gson> GSON = ThreadLocal.withInitial(Gson::new);
 
-    private final Path snippetStorageDir;
+    private final Path fragmentsFolder;
 
     public FragmentsDao(@NotNull Project project) {
-        var config = new FragmentsPluginConfig(project);
+        var config = project.getService(PluginConfig.class);
 
-        this.snippetStorageDir = Path.of(Objects.requireNonNull(project.getBasePath()), config.getSnippetStoragePath());
+        this.fragmentsFolder = Path.of(Objects.requireNonNull(project.getBasePath()), config.fragmentsFolder());
 
         try {
-            Files.createDirectories(snippetStorageDir);
+            Files.createDirectories(fragmentsFolder);
         } catch (IOException e) {
             throw new RuntimeException("Failed to initialize Fragments folder", e);
         }
@@ -85,6 +85,6 @@ public final class FragmentsDao {
     }
 
     private @NotNull Path getSnippetFilePath(@NotNull String id) {
-        return snippetStorageDir.resolve("@" + id + ".json");
+        return fragmentsFolder.resolve("@" + id + ".json");
     }
 }

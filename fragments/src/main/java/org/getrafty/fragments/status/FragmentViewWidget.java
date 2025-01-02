@@ -28,7 +28,7 @@ public class FragmentViewWidget implements StatusBarWidget, StatusBarWidget.Text
     @NotNull
     @Override
     public String getText() {
-        return "Fragment view: " + (FragmentsManager.CURRENT_FRAGMENT_VERSION.name());
+        return (FragmentsManager.CURRENT_FRAGMENT_VERSION == FragmentsManager.FragmentVersion.USER ? "User-facing" : "Dev") + " fragments";
     }
 
     @Nullable
