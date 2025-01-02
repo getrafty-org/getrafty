@@ -1,6 +1,0 @@
----
-layout: layout.vto
----
-
-## FAQ
-
