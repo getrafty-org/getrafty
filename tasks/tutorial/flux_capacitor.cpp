@@ -2,8 +2,8 @@
 
 namespace getrafty::tutorial {
 
-Speed FluxCapacitor::computeTimeBreakBarrierSpeed() {
-  // ==== YOUR CODE: @bdc2287c ====
+/*NOLINT*/ Speed FluxCapacitor::computeTimeBreakBarrierSpeed() {
+  // ==== YOUR CODE: @bdb27787 ====
   return 0;
   // ==== END YOUR CODE ====
 }

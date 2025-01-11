@@ -2,8 +2,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
 
 # --------------------------------------------------------------------
 
-set(LIBS_LIST "fmt;function2")
+# Libraries with CMake targets
+set(TARGET_LIBS "fmt::fmt;function2;folly;GTest::gtest_main;GTest::gmock_main")
 
+# System libraries
+set(SYSTEM_LIBS "pthread")
 
 if((CMAKE_BUILD_TYPE MATCHES Release) AND NOT TWIST_FAULTY)
     list(APPEND LIBS_LIST "mimalloc")
@@ -19,10 +22,16 @@ endmacro()
 
 function(add_task_executable BINARY_NAME)
     set(BINARY_SOURCES ${ARGN})
-
     add_executable(${BINARY_NAME} ${BINARY_SOURCES} ${TASK_SOURCES})
-    target_link_libraries(${BINARY_NAME} pthread GTest::gtest_main GTest::gmock_main ${LIBS_LIST})
-    add_dependencies(${BINARY_NAME} ${LIBS_LIST})
+    target_link_libraries(${BINARY_NAME} PRIVATE ${TARGET_LIBS} ${SYSTEM_LIBS})
+
+    add_dependencies(${BINARY_NAME}
+            fmt::fmt
+            function2
+            folly
+            GTest::gtest_main
+            GTest::gmock_main
+    )
 endfunction()
 
 # --------------------------------------------------------------------
@@ -32,14 +41,12 @@ endfunction()
 macro(begin_task)
     set(TASK_DIR ${CMAKE_CURRENT_SOURCE_DIR})
     string(REPLACE "${CMAKE_SOURCE_DIR}/" "" RELATIVE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-    set(PRIVATE_TASK_DIR "${CMAKE_SOURCE_DIR}/${PROJECT_NAME}-private/${RELATIVE_DIR}")
 
     get_filename_component(TASK_NAME ${TASK_DIR} NAME)
-
     get_filename_component(TOPIC_DIR ${TASK_DIR} DIRECTORY)
     get_filename_component(TOPIC_NAME ${TOPIC_DIR} NAME)
 
-    project_log("Topic = '${TOPIC_NAME}', task = '${TASK_NAME}'")
+    status("Topic = '${TOPIC_NAME}', task = '${TASK_NAME}'")
 
     include_directories(${TASK_DIR})
 
@@ -63,22 +70,6 @@ macro(set_task_sources)
     foreach(FILE ${ARGV})
         # Get the file extension
         get_filename_component(EXT "${FILE}" EXT)
-
-        # Check if the extension is .cpp, .cc, or .c
-#        if(EXT STREQUAL ".cpp" OR EXT STREQUAL ".hpp")
-#            # Check if a file with the same name exists in the OTHER_DIRECTORY
-#            get_filename_component(FILENAME "${FILE}" NAME)
-#
-#
-#            if(EXISTS "${PRIVATE_TASK_DIR}/${FILE}" AND ${INCLUDE_PRIVATE_SOURCES})
-#                # Prepend the prefix pointing to the different directory
-#                message("[private impl] Adding task file : ${PRIVATE_TASK_DIR}/${FILE}")
-#                prepend(TASK_SOURCES "${PRIVATE_TASK_DIR}/" ${FILE})
-#            else()
-#                message("Adding task file: ${TASK_DIR}/${FILE}")
-#                prepend(TASK_SOURCES "${TASK_DIR}/" ${FILE})
-#            endif()
-#        endif()
     endforeach()
 
     # Assign the filtered sources to TASK_SOURCES without adding additional prefixing
@@ -101,7 +92,7 @@ function(add_task_library DIR_NAME)
     set(LIB_DIR ${TASK_DIR}/${DIR_NAME})
 
     get_task_target(LIB_TARGET ${LIB_NAME})
-    project_log("Add task library: ${LIB_TARGET}")
+    status("Add task library: ${LIB_TARGET}")
 
     file(GLOB_RECURSE LIB_CXX_SOURCES ${LIB_DIR}/*.cpp)
     file(GLOB_RECURSE LIB_HEADERS ${LIB_DIR}/*.hpp ${LIB_DIR}/*.ipp)
@@ -143,7 +134,7 @@ endfunction()
 
 function(add_task_playground DIR_NAME)
     get_task_target(PLAY_TARGET_NAME ${DIR_NAME})
-    project_log("Add task playground: ${PLAY_TARGET_NAME}")
+    status("Add task playground: ${PLAY_TARGET_NAME}")
 
     add_task_dir_target(playground ${DIR_NAME})
 endfunction()

@@ -46,3 +46,5 @@ _cache
 tasks/solutions
 
 .backlog.txt
+
+cmake-build-debug

@@ -6,7 +6,7 @@ include(FetchContent)
 
 # fmt with println
 
-project_log("FetchContent: fmt")
+status("FetchContent: fmt")
 
 FetchContent_Declare(
         fmt
@@ -19,7 +19,7 @@ FetchContent_MakeAvailable(fmt)
 
 # Unique Function
 
-project_log("FetchContent: function2")
+status("FetchContent: function2")
 
 FetchContent_Declare(
         function2
@@ -31,7 +31,7 @@ FetchContent_MakeAvailable(function2)
 
 # --------------------------------------------------------------------
 
-project_log("FetchContent: asio")
+status("FetchContent: asio")
 
 FetchContent_Declare(
         asio
@@ -48,7 +48,7 @@ target_include_directories(asio INTERFACE ${asio_SOURCE_DIR}/asio/include)
 # Memory allocation
 
 if((CMAKE_BUILD_TYPE MATCHES Release) AND NOT TWIST_FAULTY)
-    project_log("FetchContent: mimalloc")
+    status("FetchContent: mimalloc")
 
     FetchContent_Declare(
             mimalloc
@@ -61,7 +61,7 @@ endif()
 
 # --------------------------------------------------------------------
 
-project_log("FetchContent: moodycamel")
+status("FetchContent: moodycamel")
 
 FetchContent_Declare(
         moodycamel
@@ -88,5 +88,13 @@ FetchContent_Declare(json
     GIT_TAG v3.11.3
 )
 FetchContent_MakeAvailable(json)
+
+# --------------------------------------------------------------------
+
+# Folly
+
+add_subdirectory(folly)
+target_compile_options(folly_base PRIVATE -w)
+
 
 # --------------------------------------------------------------------

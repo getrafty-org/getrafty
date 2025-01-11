@@ -42,6 +42,10 @@ ARG DEPS=" \
     python3 \
     python3-pip \
     python3-venv \
+    libgflags-dev \
+    libgoogle-glog-dev \
+    libunwind-dev \
+    libfast-float-dev \
 "
 
 RUN apt-get update -q && \
