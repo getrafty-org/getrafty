@@ -5,6 +5,7 @@
 #include <deque>
 #include <functional>
 #include <vector>
+#include <mutex>
 
 namespace getrafty::wheels::concurrent {
 // Unbounded blocking multi-producers/multi-consumers queue

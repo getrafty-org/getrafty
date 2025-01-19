@@ -1,0 +1,90 @@
+------------------------------------------------------------------------------------------------
+# Bugs:
+------------------------------------------------------------------------------------------------
+    * [be] configure sanitizers, i have high degree of confidence there are might be several memory leaks in the code.
+
+    * [bugfix] event_watcher hangs infinitely due to a bug in thread pool implementation, make sure stop works correctly.
+        @: (DONE) write tests for queue.hpp
+        @: write tests for thread_pool.hpp
+
+        @: rpc uses connection in a way that it can directly send data via function call and receive data from the callback (which can be the rpc object itself)
+           the primary responsibility of rpc class is marshalling, retires and dedup. And ofc call user function.
+
+
+     * possible list of labs for rpc theme
+        @: implement concurrency primitives, e.g. thread pool, futures as a foundation of lib
+        @: implement message packing / unpacking and method calling semantic
+        @: flow control, reties and deduplication, i.e. perfect link over asynchronous network
+        @: testing via failure injection
+
+
+------------------------------------------------------------------------------------------------
+# RPC
+------------------------------------------------------------------------------------------------
+
+Low-level IO:
+
+// event loop to trigger callback once fd becomes ready for read or write (set via WatchFlag).
+class EventWatcher {
+public:
+    void watch(int fd, WatchFlag flag, IWatchCallback *ch);
+    void unwatch(int fd);
+};
+
+
+// low level primitive to exchange data between endpoints (asynchronous).
+class ITransport {
+public:
+    explicit ITransport(std::shared_ptr<EventWatcher> ew);
+    ~ITransport() = default;
+
+    virtual std::future<> read(uint8_t* buf, const uint32_t len) = 0;
+    virtual std::future<> write(const uint8_t* buf, const uint32_t len) = 0;
+};
+
+using TransportFactory = std::function<ITransport>(void);
+
+// higher level primitive to exchange typed messages between endpoints.
+// message format, layout, packing and unpacking logic is defined by protocol (TBD).
+// of basic form the channel is responsible only for sending and receiving messages utilizing transport for actual data exchange and protocol for assembling messages from byte stream.
+// TODO: should fault tolerance be implemented on that layer? likely yes.
+IChannel {
+public:
+    explicit IChannel(TransportFactory& factory, IProtocol& protocol);
+    ~IChannel() = default;
+
+    std::future<> send(const IProtocol.Message& msg) = 0;
+    std::future<IProtocol.Message> receive() = 0;
+};
+
+using ChannelFactory = std::function<IChannel>(void);
+
+
+------------------------------------------------------------------------------------------------
+
+// high level user facing API.
+
+
+// client is responsible for making remote function calls.
+// it utilize channel but on top of this adds fault tolerance function, i.e. retries and timeouts.
+class Client {
+public:
+    explicit Client(const std::string& addr, ChannelFactory& factory);
+
+    std::future<IProtocol.Message> call(const IProtocol.Message& msg);
+};
+
+// implementation note:
+// channel delivers messages out of order.
+// it's wrong to assume a pair of send and subsequent receive would always yield response message for previously sent request message.
+// thus messages must include correlation ids to be able to match responses and requests.
+
+// timeout and retries should be implemented as well. internally client can have a map of request to std::promise - response. once request is submitted client set timer to fire after certain timout.
+// when timer fires it check if given request is still in flight, and if so, sets exception result in corresponding promise + cancel whatever.
+
+
+
+
+Coro/thread per channel receiving messages, scheduling handlers and sending response messages back.
+
+// TODO: Server, Timer on top of EventWatcher

@@ -101,13 +101,13 @@ function(add_task_library DIR_NAME)
 
     if (LIB_CXX_SOURCES)
         add_library(${LIB_TARGET} STATIC ${LIB_CXX_SOURCES} ${LIB_HEADERS})
-        target_include_directories(${LIB_TARGET} PUBLIC ${LIB_INCLUDE_DIR})
-        target_link_libraries(${LIB_TARGET} ${LIBS_LIST})
+        target_include_directories(${LIB_TARGET} PRIVATE ${LIB_INCLUDE_DIR})
+        target_link_libraries(${LIB_TARGET} PRIVATE ${LIBS_LIST})
     else()
         # header-only library
         add_library(${LIB_TARGET} INTERFACE)
-        target_include_directories(${LIB_TARGET} INTERFACE ${LIB_INCLUDE_DIR})
-        target_link_libraries(${LIB_TARGET} INTERFACE ${LIBS_LIST})
+        target_include_directories(${LIB_TARGET} PRIVATE ${LIB_INCLUDE_DIR})
+        target_link_libraries(${LIB_TARGET} PRIVATE ${LIBS_LIST})
     endif()
 
     # Append ${LIB_TARGET to LIBS_LIST

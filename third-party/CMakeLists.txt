@@ -94,7 +94,12 @@ FetchContent_MakeAvailable(json)
 # Folly
 
 add_subdirectory(folly)
-target_compile_options(folly_base PRIVATE -w)
-
-
+target_compile_options(folly_base
+    PRIVATE
+        -Wno-error  # Only for Folly's internal compilation
+    PUBLIC
+        -Wno-c++20-extensions
+        -Wno-c99-extensions
+        -Wno-gnu-zero-variadic-macro-arguments
+)
 # --------------------------------------------------------------------

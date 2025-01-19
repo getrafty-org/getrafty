@@ -5,7 +5,9 @@
 #include <functional>
 #include <thread>
 #include <vector>
+#include <optional>
 #include "queue.hpp"
+
 
 namespace getrafty::wheels::concurrent {
 

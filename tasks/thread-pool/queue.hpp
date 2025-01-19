@@ -4,6 +4,7 @@
 #include <cassert>
 #include <deque>
 #include <functional>
+#include <mutex>
 #include <vector>
 
 namespace getrafty::wheels::concurrent {

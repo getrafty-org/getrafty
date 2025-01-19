@@ -1,9 +1,11 @@
 #pragma once
 
-#include <unordered_set>
-#include <sys/select.h>
-#include <vector>
 #include <sys/epoll.h>
+#include <sys/select.h>
+#include <unordered_set>
+#include <vector>
+
+#include <mutex>
 #include <thread_pool.hpp>
 
 using getrafty::wheels::concurrent::ThreadPool;
@@ -49,14 +51,16 @@ namespace getrafty::rpc::io {
         void waitLoop();
 
         int epoll_fd_;
-        int pipe_fd_[2]{}; // Pipe for wake-up notifications
+        int pipe_fd_[2]{};
         std::unique_ptr<ThreadPool> tp_;
 
-        std::unordered_map<int, IWatchCallback *> callbacks_; // Callback map for each fd
+        std::unordered_map<int, IWatchCallback *> callbacks_;
         std::mutex m_;
 
         std::unordered_map<int, bool> scheduled_;
 
         std::function<int(int, epoll_event*, int, int)> epollWaitFunc_;
+
+        std::unique_ptr<std::thread> loop_thread_;
     };
 } // getrafty::rpc-io::io

@@ -1,4 +1,5 @@
 #include <cassert>
+#include <optional>
 
 #include <thread_pool.hpp>
 

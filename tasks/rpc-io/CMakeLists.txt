@@ -1,6 +1,7 @@
 begin_task()
 
 set_task_sources(
+        client.hpp
         event_watcher.cpp
         event_watcher.hpp
         logging.cpp
@@ -8,6 +9,7 @@ set_task_sources(
         thread_pool.hpp
         thread_pool.cpp
         queue.hpp
+        channel.hpp
 )
 
 add_task_test(
@@ -20,6 +22,19 @@ add_task_test(
         thread_pool.hpp
         thread_pool.cpp
         queue.hpp
+)
+
+
+add_task_test(
+        client_test
+        client_test.cpp
+        client.hpp
+)
+
+target_compile_options(
+        task_tasks_rpc-io_client_test
+        PRIVATE
+        -Wno-error
 )
 
 end_task()
