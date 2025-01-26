@@ -5,6 +5,7 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <atomic>
+#include <barrier>
 #include <chrono>
 #include <condition_variable>
 #include <latch>
@@ -62,9 +63,7 @@ class MockCallback /* NOLINT */ : public IWatchCallback {
 
 class EventWatcherTest : public ::testing::Test {
  protected:
-  EventWatcher watcher{
-      std::make_unique<ThreadPool>(std::thread::hardware_concurrency())};
-
+  EventWatcher watcher{};
   void TearDown() override { watcher.unwatchAll(); }
 
   static void setupPipe(int pipe_fd[2]) { ASSERT_EQ(pipe(pipe_fd), 0); }
@@ -92,7 +91,7 @@ TEST_F(EventWatcherTest, ReadCallbackCalledWhenReady) {
 
   EXPECT_EQ(mock_callback.lastRead, test_data);
 
-  watcher.unwatch(test_fd[0]);
+  watcher.unwatch(test_fd[0], CB_RDONLY);
   close(test_fd[0]);
   close(test_fd[1]);
 }
@@ -117,7 +116,7 @@ TEST_F(EventWatcherTest, WriteCallbackNotCalledWhenBufferFull) {
 
   std::this_thread::sleep_for(kWarmupDuration);
 
-  watcher.unwatch(test_fd[1]);
+  watcher.unwatch(test_fd[1], CB_WRONLY);
   close(test_fd[0]);
   close(test_fd[1]);
 }
@@ -145,7 +144,7 @@ TEST_F(EventWatcherTest, WriteCallbackCalledOnceWhenBufferHasCapacity) {
 
   std::this_thread::sleep_for(kWarmupDuration);
 
-  watcher.unwatch(pipe_fd[1]);
+  watcher.unwatch(pipe_fd[1], CB_WRONLY);
 
   std::vector<char> buffer(buffer_size);
   ASSERT_EQ(read(pipe_fd[0], buffer.data(), buffer.size()), buffer_size);
@@ -172,7 +171,7 @@ TEST_F(EventWatcherTest, NoCallbackIfFdNotReadyForRead) {
 
   std::this_thread::sleep_for(kWarmupDuration);
 
-  watcher.unwatch(test_fd[0]);
+  watcher.unwatch(test_fd[0], CB_RDONLY);
   close(test_fd[0]);
   close(test_fd[1]);
 }
@@ -194,7 +193,8 @@ TEST_F(EventWatcherTest, DuplicateWatchRequests) {
 
   std::this_thread::sleep_for(kWarmupDuration);
 
-  watcher.unwatch(test_fd[0]);
+  watcher.unwatch(test_fd[0], CB_RDONLY);
+
   close(test_fd[0]);
   close(test_fd[1]);
 }
@@ -209,7 +209,7 @@ TEST_F(EventWatcherTest, NoCallbackAfterUnwatch) {
       .Times(0);
 
   watcher.watch(test_fd[0], CB_RDONLY, &mock_callback);
-  watcher.unwatch(test_fd[0]);
+  watcher.unwatch(test_fd[0], CB_RDONLY);
 
   const std::string test_data = "Test Data";
   write(test_fd[1], test_data.c_str(), test_data.size());
@@ -238,7 +238,7 @@ TEST_F(EventWatcherTest, RetryOnEINTR) {
     }
   };
 
-  EventWatcher watcher{std::make_unique<ThreadPool>(1), alternating_epoll_mock};
+  EventWatcher watcher{alternating_epoll_mock};
   int test_fd[2];
   setupPipe(test_fd);
 
@@ -257,7 +257,7 @@ TEST_F(EventWatcherTest, RetryOnEINTR) {
 
   watcher.watch(test_fd[0], CB_RDONLY, &mock_callback);
 
-  auto perform_write = [&](const char* data) {
+  auto doWrite = [&](const char* data) {
     std::unique_lock<std::mutex> lock(mtx);
     cv.wait(lock, [&] { return ready_for_next_write; });
     ready_for_next_write = false;
@@ -265,7 +265,7 @@ TEST_F(EventWatcherTest, RetryOnEINTR) {
   };
 
   for (auto i = 0; i < kNumWrites; ++i) {
-    perform_write("Test Data");
+    doWrite("Test Data");
   }
 
   std::this_thread::sleep_for(kCallbackRepeatDuration);
@@ -274,7 +274,68 @@ TEST_F(EventWatcherTest, RetryOnEINTR) {
   EXPECT_GE(success_count, 1);
   EXPECT_EQ(callback_count.load(), kNumWrites);
 
-  watcher.unwatch(test_fd[0]);
+  watcher.unwatch(test_fd[0], CB_RDONLY);
   close(test_fd[0]);
   close(test_fd[1]);
 }
+
+TEST_F(EventWatcherTest, EpollBlocksWithNoWatchers) {
+  std::atomic<uint64_t> epoll_wait_call_count = 0;
+
+  auto epoll_mock = [&](int, epoll_event*, int, int) {
+    ++epoll_wait_call_count;
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    return 0;
+  };
+
+  EventWatcher watcher{epoll_mock};
+
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
+  EXPECT_LT(epoll_wait_call_count, 10);
+}
+
+TEST_F(EventWatcherTest, ManyWatchers) {
+  constexpr int kNumWatchers = 1000;
+  int pipe_fd[kNumWatchers][2];
+  std::vector<MockCallback> callbacks(kNumWatchers);
+  std::latch latch{kNumWatchers};
+
+  // Setup pipes and watchers
+  for (int i = 0; i < kNumWatchers; ++i) {
+    setupPipe(pipe_fd[i]);
+    watcher.watch(pipe_fd[i][0], CB_RDONLY, &callbacks[i]);
+    EXPECT_CALL(callbacks[i], onReadReadyMock(pipe_fd[i][0], testing::_))
+        .WillOnce([&latch] { latch.count_down(); });
+  }
+
+  // Barrier for synchronizing threads
+  std::barrier sync{kNumWatchers};
+  std::vector<std::thread> threads(kNumWatchers);
+
+  // Start threads to write to the pipes
+  for (int i = 0; i < kNumWatchers; ++i) {
+    threads[i] = std::thread([i, &pipe_fd, &sync] {
+        sync.arrive_and_wait();
+        constexpr char trigger_data = 'x';
+        ASSERT_EQ(write(pipe_fd[i][1], &trigger_data, sizeof(trigger_data)), 1);
+    });
+  }
+
+  // Join all threads
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
+  // Wait for all callbacks to be invoked
+  latch.wait();
+
+  // Cleanup
+  for (auto & [i,j] : pipe_fd) {
+    watcher.unwatch(i, CB_RDONLY);
+    for (const int fd : {i, j}) {
+      close(fd);
+    }
+  }
+}
+

@@ -1,4 +1,5 @@
 #include <cassert>
+#include <iostream>
 #include <optional>
 
 #include <thread_pool.hpp>
@@ -9,11 +10,31 @@ ThreadPool::ThreadPool(const size_t threads)
 
 void ThreadPool::start() {
   assert(state_.exchange(RUNNING) == NONE);
-  // Your code goes here, initializing threads, etc.
+
+  // ==== YOUR CODE: @70e177c1 ====
+  for (uint32_t i = 0; i < worker_threads_count_; ++i) {
+    worker_threads_.emplace_back([this] {
+      while (true) {
+        auto item = worker_queue_.take();
+        if (!item) {
+          // stop
+          break;
+        }
+        try {
+          (*item)();
+        } catch (std::exception& ex) {
+          std::cerr << "unhandled exception in ThreadPool thread: " << ex.what() << std::endl;
+        }
+      }
+    });
+  }
+  // ==== END YOUR CODE ====
 }
 
 ThreadPool::~ThreadPool() {
-  assert(state_.load() != STOPPED);
+  if(state_.exchange(STOPPED) != STOPPED) {
+    stop();
+  }
 }
 
 bool ThreadPool::submit(Task&& task) {

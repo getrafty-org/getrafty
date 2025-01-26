@@ -1,66 +1,60 @@
 #pragma once
 
+#include <map>
 #include <sys/epoll.h>
-#include <sys/select.h>
-#include <unordered_set>
-#include <vector>
-
-#include <mutex>
+#include <shared_mutex>
 #include <thread_pool.hpp>
 
-using getrafty::wheels::concurrent::ThreadPool;
 
 namespace getrafty::rpc::io {
-    enum WatchFlag {
-        CB_NONE = 0x0,
-        CB_RDONLY = 0x1,
-        CB_WRONLY = 0x10,
-        CB_RDWR = 0x11,
-        CB_MASK = ~0x11,
-    };
 
-    class IWatchCallback {
-    public:
-        virtual void onReadReady(int fd) = 0;
+using wheels::concurrent::ThreadPool;
+using EpollWaitFunc = std::function<int(int, epoll_event *, int, int)>;
 
-        virtual void onWriteReady(int fd) = 0;
+enum WatchFlag : uint8_t {
+    CB_RDONLY = 0x00,
+    CB_WRONLY = 0x01,
+};
 
-        virtual ~IWatchCallback() = default;
-    };
+class IWatchCallback {
+public:
+    virtual void onReadReady(int /*fd*/) {}
+    virtual void onWriteReady(int /*fd*/){}
+    virtual ~IWatchCallback() = default;
+};
 
-    class EventWatcher {
-    public:
-        explicit EventWatcher(std::unique_ptr<ThreadPool> tp);
+class EventWatcher {
+public:
+    explicit EventWatcher(EpollWaitFunc epoll_impl = ::epoll_wait );
+    ~EventWatcher();
 
-        explicit EventWatcher(
-            std::unique_ptr<ThreadPool> tp,
-            std::function<int(int, epoll_event*, int, int)> epollWaitFunc);
+    void watch(int fd, WatchFlag flag, IWatchCallback *ch);
+    void unwatch(int fd, WatchFlag flag);
+    void unwatchAll();
 
-        ~EventWatcher();
+    static EventWatcher &getInstance();
 
-        void watch(int fd, WatchFlag flag, IWatchCallback *ch);
+private:
+    using FdAndFlag = std::pair<int, WatchFlag>;
+    using IWatchCallbackPtr = IWatchCallback*;
 
-        void unwatch(int fd);
+    int epoll_fd_;
+    int early_wakeup_pipe_fd_[2]{};
 
-        void unwatchAll();
+    std::shared_mutex mutex_;
+    std::map<FdAndFlag, IWatchCallbackPtr> callbacks_{};
 
-        static EventWatcher &getInstance();
+    std::atomic<bool> running_{true};
 
-    private:
-        // Main loop for waiting on and processing events
-        void waitLoop();
+    EpollWaitFunc epoll_impl_;
+    std::unique_ptr<std::thread> loop_thread_;
 
-        int epoll_fd_;
-        int pipe_fd_[2]{};
-        std::unique_ptr<ThreadPool> tp_;
+    std::vector<int> readable_fd_{};
+    std::vector<int> writable_fd_{};
 
-        std::unordered_map<int, IWatchCallback *> callbacks_;
-        std::mutex m_;
+    // Main loop for waiting on and processing events
+    void waitLoop();
 
-        std::unordered_map<int, bool> scheduled_;
-
-        std::function<int(int, epoll_event*, int, int)> epollWaitFunc_;
-
-        std::unique_ptr<std::thread> loop_thread_;
-    };
+    void signalWakeLoop() const;
+};
 } // getrafty::rpc-io::io
