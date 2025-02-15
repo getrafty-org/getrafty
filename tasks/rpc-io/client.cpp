@@ -2,7 +2,7 @@
 
 namespace getrafty::rpc {
 
-folly::Future<std::shared_ptr<io::IMessage>> Client::doCall(
+folly::coro::Task<std::shared_ptr<io::IMessage>> Client::doCall(
     const io::MessagePtr& message, CallOptions options) {
   const auto xid = next_xid_++;
   message->writeXID(xid);
@@ -51,7 +51,7 @@ folly::Future<std::shared_ptr<io::IMessage>> Client::doCall(
       },
       message);
 
-  return future;
+  co_return co_await std::move(future).semi();
 };
 
 void Client::completeInflight(io::Result result) {

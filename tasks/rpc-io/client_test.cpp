@@ -1,9 +1,16 @@
 #include "client.hpp"
+#include <folly/coro/Collect.h>
+#include <folly/coro/Sleep.h>
+#include <folly/experimental/coro/GtestHelpers.h>
 #include <folly/futures/Future.h>
+#include <folly/init/Init.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <chrono>
 #include <memory>
+#include "folly/coro/Timeout.h"
+
+#include <latch>
 
 using namespace std::chrono;
 using namespace getrafty::rpc;
@@ -66,7 +73,7 @@ class ClientTest : public ::testing::Test {
   }
 };
 
-TEST_F(ClientTest, JustWorks) {
+CO_TEST_F(ClientTest, JustWorks) {
   const auto request_msg = std::make_shared<MockMessage>();
   const auto response_msg = std::make_shared<MockMessage>();
 
@@ -96,15 +103,14 @@ TEST_F(ClientTest, JustWorks) {
 
   SomeObject request;
   request.data() = "someData";
-  auto future = client_->call<SomeObject, SomeObject>(request);
-  auto response = std::move(future).get();
+  auto response = co_await client_->call<SomeObject, SomeObject>(request);
 
   EXPECT_TRUE(send_callback_called);
   EXPECT_TRUE(receive_callback_called);
   EXPECT_EQ(response.data(), "otherData");
-};
+}
 
-TEST_F(ClientTest, SendTimeout) {
+CO_TEST_F(ClientTest, SendTimeout) {
   const auto msg = std::make_shared<MockMessage>();
   EXPECT_CALL(*mock_channel_, createMessage()).WillOnce(Return(msg));
   EXPECT_CALL(*mock_channel_, sendMessage(_, _))
@@ -113,22 +119,15 @@ TEST_F(ClientTest, SendTimeout) {
       }));
   EXPECT_CALL(*mock_channel_, recvMessage(_)).Times(0);
 
-  auto future =
-      client_->call<SomeObject, SomeObject>({}, {.send_timeout = 10ms});
+  const auto& respTry = co_await folly::coro::co_awaitTry(folly::coro::timeout(
+      client_->call<SomeObject, SomeObject>({}, {.send_timeout = 10ms}),
+      100ms));
 
-  EXPECT_THROW(
-      {
-        try {
-          std::move(future).get(100ms);
-        } catch (RpcError& e) {
-          EXPECT_EQ(e.code(), RpcError::SEND_TIMEOUT);
-          throw;
-        }
-      },
-      RpcError);
+  EXPECT_TRUE(respTry.withException(
+      [](const RpcError& e) { EXPECT_EQ(e.code(), RpcError::SEND_TIMEOUT); }));
 }
 
-TEST_F(ClientTest, RecvTimeout) {
+CO_TEST_F(ClientTest, RecvTimeout) {
   const auto msg = std::make_shared<MockMessage>();
   EXPECT_CALL(*mock_channel_, createMessage()).WillOnce(Return(msg));
   EXPECT_CALL(*mock_channel_, sendMessage(_, _))
@@ -138,78 +137,89 @@ TEST_F(ClientTest, RecvTimeout) {
         // Packet lost
       }));
 
-  auto future =
-      client_->call<SomeObject, SomeObject>({}, {.recv_timeout = 10ms});
+  const auto& respTry = co_await folly::coro::co_awaitTry(folly::coro::timeout(
+      client_->call<SomeObject, SomeObject>({}, {.recv_timeout = 10ms}),
+      100ms));
 
-  EXPECT_THROW(
-      {
-        try {
-          std::move(future).get(100ms);
-        } catch (RpcError& e) {
-          EXPECT_EQ(e.code(), RpcError::RECV_TIMEOUT);
-          throw;
-        }
-      },
-      RpcError);
+  EXPECT_TRUE(respTry.withException(
+      [](const RpcError& e) { EXPECT_EQ(e.code(), RpcError::RECV_TIMEOUT); }));
 }
 
-TEST_F(ClientTest, OutOfOrder) {
+CO_TEST_F(ClientTest, OutOfOrder) {
   auto request_msg1 = std::make_shared<MockMessage>();
-  auto request_msg2 = std::make_shared<MockMessage>();
   auto response_msg1 = std::make_shared<MockMessage>();
+
+  auto request_msg2 = std::make_shared<MockMessage>();
   auto response_msg2 = std::make_shared<MockMessage>();
 
+  std::latch latch{2};
+
+  // Expect createMessage() to be called twice, one for each call.
   EXPECT_CALL(*mock_channel_, createMessage())
       .WillOnce(Return(request_msg1))
       .WillOnce(Return(request_msg2));
 
-  // 1. request -> response
+  // For the first call, capture the XID and set up the response.
   uint64_t captured_xid1 = 0;
-  EXPECT_CALL(*request_msg1, writeXID(_))
-      .WillOnce(Invoke([&](const uint64_t xid1) { captured_xid1 = xid1; }));
-
+  EXPECT_CALL(*request_msg1, writeXID(_)).WillOnce(Invoke([&](uint64_t xid1) {
+    captured_xid1 = xid1;
+  }));
   EXPECT_CALL(*response_msg1, consumeXID()).WillOnce(Invoke([&] {
     return captured_xid1;
   }));
-
   EXPECT_CALL(*response_msg1, consumeString()).WillOnce(Return("response1"));
-  //
 
-  // 2. request -> response
+  // For the second call, capture the XID and set up the response.
   uint64_t captured_xid2 = 0;
-  EXPECT_CALL(*request_msg2, writeXID(_))
-      .WillOnce(Invoke([&](const uint64_t xid2) { captured_xid2 = xid2; }));
-
+  EXPECT_CALL(*request_msg2, writeXID(_)).WillOnce(Invoke([&](uint64_t xid2) {
+    captured_xid2 = xid2;
+  }));
   EXPECT_CALL(*response_msg2, consumeXID()).WillOnce(Invoke([&] {
     return captured_xid2;
   }));
-
   EXPECT_CALL(*response_msg2, consumeString()).WillOnce(Return("response2"));
-  //
 
+  // When sending, immediately invoke the send callback with OK.
   EXPECT_CALL(*mock_channel_, sendMessage(_, _))
       .WillRepeatedly(Invoke([](AsyncCallback&& cob, auto) { cob({OK}); }));
 
-  AsyncCallback saved_recv_callback1{};
-  AsyncCallback saved_recv_callback2{};
+  // Capture the two receive callbacks.
+  AsyncCallback saved_recv_callback1, saved_recv_callback2;
   EXPECT_CALL(*mock_channel_, recvMessage(_))
-      .WillOnce(Invoke(
-          [&](AsyncCallback cob) { saved_recv_callback1 = std::move(cob); }))
-      .WillOnce(Invoke(
-          [&](AsyncCallback cob) { saved_recv_callback2 = std::move(cob); }));
+      .Times(2)
+      .WillOnce(Invoke([&](AsyncCallback cob) {
+        saved_recv_callback1 = std::move(cob);
+        latch.count_down();
+      }))
+      .WillOnce(Invoke([&](AsyncCallback cob) {
+        saved_recv_callback2 = std::move(cob);
+        latch.count_down();
+      }));
 
-  auto future1 = client_->call<SomeObject, SomeObject>({});
-  auto future2 = client_->call<SomeObject, SomeObject>({});
+  auto semi1 = client_->call<SomeObject, SomeObject>({})
+                   .scheduleOn(folly::getGlobalCPUExecutor())
+                   .start();
+  auto semi2 = client_->call<SomeObject, SomeObject>({})
+                   .scheduleOn(folly::getGlobalCPUExecutor())
+                   .start();
 
-  // Out of order: first arrives message #2 then message #1
+  latch.wait();
+
+  // Simulate out-of-order arrival:
   saved_recv_callback2({OK, response_msg2});
   saved_recv_callback1({OK, response_msg1});
 
-  EXPECT_NO_THROW({
-    auto response1 = std::move(future1).get();
-    auto response2 = std::move(future2).get();
+  auto responses =
+      co_await folly::coro::collectAll(std::move(semi1), std::move(semi2));
+  auto& res1 = std::get<0>(responses);
+  auto& res2 = std::get<1>(responses);
 
-    EXPECT_EQ(response1.data(), "response1");
-    EXPECT_EQ(response2.data(), "response2");
-  });
+  EXPECT_EQ(res1.data(), "response1");
+  EXPECT_EQ(res2.data(), "response2");
+}
+
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  folly::Init init(&argc, &argv);
+  return RUN_ALL_TESTS();
 }
