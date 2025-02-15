@@ -23,7 +23,8 @@ void ThreadPool::start() {
         try {
           (*item)();
         } catch (std::exception& ex) {
-          std::cerr << "unhandled exception in ThreadPool thread: " << ex.what() << std::endl;
+          std::cerr << "unhandled exception in ThreadPool thread: " << ex.what()
+                    << std::endl;
         }
       }
     });
@@ -32,7 +33,7 @@ void ThreadPool::start() {
 }
 
 ThreadPool::~ThreadPool() {
-  if(state_.exchange(STOPPED) != STOPPED) {
+  if (state_.exchange(STOPPED) != STOPPED) {
     stop();
   }
 }
@@ -47,15 +48,17 @@ bool ThreadPool::submit(Task&& task) {
 }
 
 void ThreadPool::stop() {
-  assert(state_.exchange(STOPPING) == RUNNING);
+  // ==== YOUR CODE: @606a035f ====
+  if (state_.exchange(STOPPING) == RUNNING) {
+    for (uint32_t i = 0; i < worker_threads_count_; ++i) {
+      worker_queue_.put(std::nullopt);
+    }
+    for (auto& th : worker_threads_) {
+      th.join();
+    }
 
-  for (uint32_t i = 0; i < worker_threads_count_; ++i) {
-    worker_queue_.put(std::nullopt);
+    state_.store(STOPPED);
   }
-  for (auto& th : worker_threads_) {
-    th.join();
-  }
-
-  state_.store(STOPPED);
+  // ==== END YOUR CODE ====
 }
 }  // namespace getrafty::wheels::concurrent

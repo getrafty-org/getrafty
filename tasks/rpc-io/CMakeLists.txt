@@ -62,6 +62,7 @@ target_link_libraries(
 
 set_task_sources(
   client.hpp
+  client.cpp
   event_watcher.cpp
   event_watcher.hpp
   logging.cpp
@@ -85,12 +86,36 @@ set_task_sources(
 #  queue.hpp
 #)
 
+# client
+add_library(
+  client
+  client.hpp
+  client.cpp
+)
 
 add_task_test(
   client_test
   client_test.cpp
   client.hpp
-  clock.hpp
+  client.cpp
+)
+
+target_link_libraries(
+  client
+  PRIVATE
+  folly
+  timer
+  thread_pool
+  event_watcher
+)
+
+target_link_libraries(
+  task_tasks_rpc-io_client_test
+  PRIVATE
+  folly
+  timer
+  thread_pool
+  event_watcher
 )
 
 target_compile_options(
@@ -98,5 +123,6 @@ target_compile_options(
   PRIVATE
   -Wno-error
 )
+#
 
 end_task()

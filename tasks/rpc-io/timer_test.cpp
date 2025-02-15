@@ -11,8 +11,10 @@
 
 #include <latch>
 
+using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace getrafty::rpc::io;
+
 using ::testing::StrictMock;
 
 class TimerTest : public ::testing::Test {
@@ -45,4 +47,34 @@ TEST_F(TimerTest, JustWorks) {
     ASSERT_TRUE(cv.wait_for(lock, 200ms + eps, [&] { return timer_fired; }));
     EXPECT_TRUE(timer_fired);
   }
+}
+
+TEST_F(TimerTest, DoNotBlockEventLoop) {
+  const auto tp = std::make_shared<ThreadPool>(2);
+  tp->start();
+
+  Timer timer{watcher, tp};
+
+  std::latch latch{2};
+  std::chrono::steady_clock::time_point timer1_trigger_time;
+  std::chrono::steady_clock::time_point timer2_trigger_time;
+
+  timer.schedule(200ms, [&] {
+    timer1_trigger_time = std::chrono::steady_clock::now();
+    std::this_thread::sleep_for(150ms);  // Simulate expensive work
+    latch.count_down();
+  });
+
+  timer.schedule(200ms, [&] {
+    timer2_trigger_time = std::chrono::steady_clock::now();
+    latch.count_down();
+  });
+
+  latch.wait();
+  EXPECT_NEAR(
+      duration_cast<milliseconds>(timer1_trigger_time.time_since_epoch())
+          .count(),
+      duration_cast<milliseconds>(timer2_trigger_time.time_since_epoch())
+          .count(),
+      10);
 }

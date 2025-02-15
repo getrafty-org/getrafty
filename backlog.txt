@@ -17,6 +17,7 @@
         @: flow control, reties and deduplication, i.e. perfect link over asynchronous network
         @: testing via failure injection
 
+    * set-up git hook to prvent pushing @private impl changes
 
 ------------------------------------------------------------------------------------------------
 # RPC

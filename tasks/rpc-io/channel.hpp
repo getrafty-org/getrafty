@@ -6,20 +6,17 @@ class IMessage {
 public:
   virtual ~IMessage() = default;
 
+  virtual void writeXID(std::uint64_t value) = 0;
   virtual void writeInt32(std::int32_t value) = 0;
   virtual void writeInt64(std::int64_t value) = 0;
-  virtual void writeBytes(const std::vector<std::uint8_t>& bytes,
-                          uint32_t length) = 0;
+  virtual void writeBytes(const std::vector<std::uint8_t>& bytes, uint32_t length) = 0;
   virtual void writeString(const std::string& str) = 0;
+  virtual std::uint64_t consumeXID() = 0;
+  virtual std::int32_t consumeInt32() = 0;
+  virtual std::int64_t consumeInt64() = 0;
+  virtual std::vector<std::uint8_t> consumeBytes(uint32_t length) = 0;
+  virtual std::string consumeString() = 0;
 
-  virtual std::int32_t readInt32() = 0;
-  virtual std::int64_t readInt64() = 0;
-  virtual std::vector<std::uint8_t> readBytes(uint32_t length) = 0;
-  virtual std::string readString() = 0;
-
-  virtual std::optional<std::string> getHeader(const std::string& key) = 0;
-  virtual void setHeader(const std::string& key,
-                         const std::string& value) = 0;
 };
 
 
@@ -45,8 +42,8 @@ class IAsyncChannel {
 
   virtual MessagePtr createMessage() = 0;
 
-  virtual void sendMessage(AsyncCallback cob, MessagePtr message) = 0;
+  virtual void sendMessage(AsyncCallback&& cob, MessagePtr message) = 0;
 
-  virtual void recvMessage(AsyncCallback cob) = 0;
+  virtual void recvMessage(AsyncCallback&& cob) = 0;
 };
 }  // namespace getrafty::rpc::io
