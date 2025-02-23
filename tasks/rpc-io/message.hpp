@@ -1,22 +1,29 @@
 #pragma once
 
+#include "error.hpp"
+
 namespace getrafty::rpc::io {
 
 class IMessage {
 public:
   virtual ~IMessage() = default;
 
-  virtual void writeXID(std::uint64_t value) = 0;
-  virtual void writeInt32(std::int32_t value) = 0;
-  virtual void writeInt64(std::int64_t value) = 0;
-  virtual void writeBytes(const std::vector<std::uint8_t>& bytes, uint32_t length) = 0;
-  virtual void writeString(const std::string& str) = 0;
-  virtual std::uint64_t consumeXID() = 0;
-  virtual std::int32_t consumeInt32() = 0;
-  virtual std::int64_t consumeInt64() = 0;
-  virtual std::vector<std::uint8_t> consumeBytes(uint32_t length) = 0;
-  virtual std::string consumeString() = 0;
+  virtual void setBody(const std::string& data) = 0;
+  [[nodiscard]] virtual std::string& getBody() const = 0;
 
+  virtual void setMethod(const std::string& method) = 0;
+  [[nodiscard]] virtual std::string& getMethod() const = 0;
+
+  virtual void setSequenceId(uint64_t value) = 0;
+  [[nodiscard]] virtual uint64_t getSequenceId() const = 0;
+
+  virtual void setProtocol(const std::string& protocol) = 0;
+  [[nodiscard]] virtual std::string& getProtocol() const = 0;
+
+  virtual void setErrorCode(RpcError::Code) = 0;
+  [[nodiscard]] virtual RpcError::Code getErrorCode() const = 0;
+
+  virtual std::shared_ptr<IMessage> constructFromCurrent() = 0;
 };
 
 using MessagePtr = std::shared_ptr<IMessage>;

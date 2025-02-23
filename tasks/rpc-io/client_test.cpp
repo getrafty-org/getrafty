@@ -1,6 +1,5 @@
 #include "client.hpp"
 #include <folly/coro/Collect.h>
-#include <folly/coro/Sleep.h>
 #include <folly/experimental/coro/GtestHelpers.h>
 #include <folly/futures/Future.h>
 #include <folly/init/Init.h>
@@ -8,7 +7,6 @@
 #include <gtest/gtest.h>
 #include <chrono>
 #include <memory>
-#include "folly/coro/Timeout.h"
 
 #include <latch>
 
@@ -21,131 +19,151 @@ using ::testing::_;
 using ::testing::DoAll;
 using ::testing::Invoke;
 using ::testing::Return;
+using ::testing::ReturnRef;
 using ::testing::StrictMock;
 
 class MockMessage : public IMessage {
  public:
-  MOCK_METHOD(void, writeXID, (uint64_t value), (override));
-  MOCK_METHOD(void, writeInt32, (int32_t value), (override));
-  MOCK_METHOD(void, writeInt64, (int64_t value), (override));
-  MOCK_METHOD(void, writeBytes,
-              (const std::vector<uint8_t>& bytes, uint32_t length), (override));
-  MOCK_METHOD(void, writeString, (const std::string& str), (override));
-  MOCK_METHOD(uint64_t, consumeXID, (), (override));
-  MOCK_METHOD(int32_t, consumeInt32, (), (override));
-  MOCK_METHOD(int64_t, consumeInt64, (), (override));
-  MOCK_METHOD(std::vector<uint8_t>, consumeBytes, (uint32_t length),
-              (override));
-  MOCK_METHOD(std::string, consumeString, (), (override));
+  MOCK_METHOD(void, setBody, (const std::string& data), (override));
+  MOCK_METHOD(std::string&, getBody, (), (const, override));
+
+  MOCK_METHOD(void, setMethod, (const std::string& method), (override));
+  MOCK_METHOD(std::string&, getMethod, (), (const, override));
+
+  MOCK_METHOD(void, setSequenceId, (uint64_t value), (override));
+  MOCK_METHOD(uint64_t, getSequenceId, (), (const, override));
+
+  MOCK_METHOD(void, setProtocol, (const std::string& protocol), (override));
+  MOCK_METHOD(std::string&, getProtocol, (), (const, override));
+
+  MOCK_METHOD(void, setErrorCode, (RpcError::Code), (override));
+  MOCK_METHOD(RpcError::Code, getErrorCode, (), (const, override));
+
+  MOCK_METHOD(std::shared_ptr<getrafty::rpc::io::IMessage>,
+              constructFromCurrent, (), (override));
 };
 
 class MockChannel : public IAsyncChannel {
  public:
   MOCK_METHOD(MessagePtr, createMessage, (), (override));
-  MOCK_METHOD(void, sendMessage, (AsyncCallback&&, MessagePtr), (override));
-  MOCK_METHOD(void, recvMessage, (AsyncCallback&&), (override));
+  MOCK_METHOD(void, sendMessage,
+              (AsyncCallback&&, MessagePtr, std::chrono::milliseconds),
+              (override));
+  MOCK_METHOD(void, recvMessage, (AsyncCallback&&, std::chrono::milliseconds),
+              (override));
 };
 
 class SomeObject : public ISerializable {
  public:
   SomeObject() = default;
 
-  void serialize(IMessage& m) const override { m.writeString(data_); }
-  void deserialize(IMessage& m) override { data_ = m.consumeString(); }
+  void serialize(IMessage& m) const override { m.setBody(data_); }
+  void deserialize(IMessage& m) override { data_ = m.getBody(); }
   std::string& data() { return data_; }
 
  private:
   std::string data_;
 };
 
-class ClientTest : public ::testing::Test {
+class ClientStressTest : public testing::Test {
  protected:
   std::shared_ptr<StrictMock<MockChannel>> mock_channel_{
       std::make_shared<StrictMock<MockChannel>>()};
 
   std::unique_ptr<Client> client_;
 
-  void SetUp() override {
-    auto tp = std::make_shared<ThreadPool>(1);
-    auto timer = std::make_shared<Timer>(EventWatcher::getInstance(), tp);
-    tp->start();
-    client_ = std::make_unique<Client>(mock_channel_, timer);
-  }
+  void SetUp() override { client_ = std::make_unique<Client>(mock_channel_); }
+
+  void TearDown() override {}
 };
 
-CO_TEST_F(ClientTest, JustWorks) {
+CO_TEST_F(ClientStressTest, JustWorks) {
+  // Arrange
   const auto request_msg = std::make_shared<MockMessage>();
   const auto response_msg = std::make_shared<MockMessage>();
 
   EXPECT_CALL(*mock_channel_, createMessage()).WillOnce(Return(request_msg));
 
-  EXPECT_CALL(*request_msg, writeString("someData"));
+  EXPECT_CALL(*request_msg, setBody("someData"));
+  EXPECT_CALL(*request_msg, setMethod("testMethod"));
+  EXPECT_CALL(*response_msg, getErrorCode())
+      .WillOnce(Return(RpcError::Code::OK));
 
   bool send_callback_called = false;
-  EXPECT_CALL(*mock_channel_, sendMessage(_, _))
+  EXPECT_CALL(*mock_channel_, sendMessage(_, _, _))
       .WillOnce(
-          Invoke([&send_callback_called](const AsyncCallback& callback, auto) {
+          Invoke([&send_callback_called](AsyncCallback&& callback, auto, auto) {
             send_callback_called = true;
-            callback({OK});
+            callback({IOStatus::OK});
           }));
 
   bool receive_callback_called = false;
-  EXPECT_CALL(*mock_channel_, recvMessage(_))
-      .WillOnce(Invoke([&receive_callback_called,
-                        response_msg](const AsyncCallback& callback) {
+  EXPECT_CALL(*mock_channel_, recvMessage(_, _))
+      .WillOnce(Invoke([&receive_callback_called, response_msg](
+                           AsyncCallback&& callback, auto) {
         receive_callback_called = true;
-        callback({OK, response_msg});
+        callback({IOStatus::OK, response_msg});
       }));
 
-  EXPECT_CALL(*response_msg, consumeXID()).WillOnce(Return(0));
+  EXPECT_CALL(*response_msg, getSequenceId()).WillOnce(Return(0));
 
-  EXPECT_CALL(*response_msg, consumeString()).WillOnce(Return("otherData"));
+  std::string response_body = "otherData";
+  EXPECT_CALL(*response_msg, getBody()).WillOnce(ReturnRef(response_body));
 
+  // Act
   SomeObject request;
   request.data() = "someData";
-  auto response = co_await client_->call<SomeObject, SomeObject>(request);
+  auto response =
+      co_await client_->call<SomeObject, SomeObject>("testMethod", request);
 
+  // Assert
   EXPECT_TRUE(send_callback_called);
   EXPECT_TRUE(receive_callback_called);
-  EXPECT_EQ(response.data(), "otherData");
+  EXPECT_EQ(response.data(), response_body);
 }
 
-CO_TEST_F(ClientTest, SendTimeout) {
+CO_TEST_F(ClientStressTest, ThrowErrorOnSendTimeout) {
+  // Arrange
   const auto msg = std::make_shared<MockMessage>();
   EXPECT_CALL(*mock_channel_, createMessage()).WillOnce(Return(msg));
-  EXPECT_CALL(*mock_channel_, sendMessage(_, _))
-      .WillOnce(Invoke([](const AsyncCallback&, auto) {
-        // Packet lost
-      }));
-  EXPECT_CALL(*mock_channel_, recvMessage(_)).Times(0);
+  EXPECT_CALL(*mock_channel_, sendMessage(_, _, _))
+      .WillOnce(
+          Invoke([](AsyncCallback&& cob, auto, auto) { cob({IO_TIMEOUT}); }));
+  EXPECT_CALL(*mock_channel_, recvMessage(_, _)).Times(0);
 
-  const auto& respTry = co_await folly::coro::co_awaitTry(folly::coro::timeout(
-      client_->call<SomeObject, SomeObject>({}, {.send_timeout = 10ms}),
-      100ms));
+  // Act
+  const auto& respTry = co_await co_awaitTry(
+      client_->call<SomeObject, SomeObject>("testMethod", {}));
 
-  EXPECT_TRUE(respTry.withException(
-      [](const RpcError& e) { EXPECT_EQ(e.code(), RpcError::SEND_TIMEOUT); }));
+  // Assert
+  EXPECT_TRUE(respTry.withException([](const RpcError& e) {
+    EXPECT_EQ(e.code(), RpcError::Code::SEND_TIMEOUT);
+  }));
 }
 
-CO_TEST_F(ClientTest, RecvTimeout) {
+CO_TEST_F(ClientStressTest, ThrowErrorOnRecvTimeout) {
+  // Arrange
   const auto msg = std::make_shared<MockMessage>();
   EXPECT_CALL(*mock_channel_, createMessage()).WillOnce(Return(msg));
-  EXPECT_CALL(*mock_channel_, sendMessage(_, _))
-      .WillOnce(Invoke([](const AsyncCallback& cob, auto) { cob({OK}); }));
-  EXPECT_CALL(*mock_channel_, recvMessage(_))
-      .WillOnce(Invoke([](const AsyncCallback& cob) {
-        // Packet lost
-      }));
+  EXPECT_CALL(*mock_channel_, sendMessage(_, _, _))
+      .WillOnce(
+          Invoke([](AsyncCallback&& cob, auto, auto) { cob({IOStatus::OK}); }));
+  EXPECT_CALL(*mock_channel_, recvMessage(_, _))
+      .WillRepeatedly(Invoke([](AsyncCallback&& cob, auto) { cob({IO_TIMEOUT}); }));
 
-  const auto& respTry = co_await folly::coro::co_awaitTry(folly::coro::timeout(
-      client_->call<SomeObject, SomeObject>({}, {.recv_timeout = 10ms}),
-      100ms));
+  // Act
+  const auto& respTry = co_await co_awaitTry(
+      client_->call<SomeObject, SomeObject>("testMethod", {}, {.recv_timeout=10ms}));
 
-  EXPECT_TRUE(respTry.withException(
-      [](const RpcError& e) { EXPECT_EQ(e.code(), RpcError::RECV_TIMEOUT); }));
+  // Assert
+  EXPECT_TRUE(respTry.withException([](const RpcError& e) {
+    EXPECT_EQ(e.code(), RpcError::Code::RECV_TIMEOUT);
+  }));
 }
 
-CO_TEST_F(ClientTest, OutOfOrder) {
+
+CO_TEST_F(ClientStressTest, OutOfOrderDelivery) {
+  // Arrange
   auto request_msg1 = std::make_shared<MockMessage>();
   auto response_msg1 = std::make_shared<MockMessage>();
 
@@ -161,61 +179,106 @@ CO_TEST_F(ClientTest, OutOfOrder) {
 
   // For the first call, capture the XID and set up the response.
   uint64_t captured_xid1 = 0;
-  EXPECT_CALL(*request_msg1, writeXID(_)).WillOnce(Invoke([&](uint64_t xid1) {
+  EXPECT_CALL(*request_msg1, setSequenceId(_)).WillOnce(Invoke([&](uint64_t xid1) {
     captured_xid1 = xid1;
   }));
-  EXPECT_CALL(*response_msg1, consumeXID()).WillOnce(Invoke([&] {
+  EXPECT_CALL(*response_msg1, getSequenceId()).WillOnce(Invoke([&] {
     return captured_xid1;
   }));
-  EXPECT_CALL(*response_msg1, consumeString()).WillOnce(Return("response1"));
+
+  std::string response1_body = "response1";
+  EXPECT_CALL(*response_msg1, getBody()).WillOnce(ReturnRef(response1_body));
+  EXPECT_CALL(*response_msg1, getErrorCode()).WillOnce(Return(RpcError::Code::OK));
 
   // For the second call, capture the XID and set up the response.
   uint64_t captured_xid2 = 0;
-  EXPECT_CALL(*request_msg2, writeXID(_)).WillOnce(Invoke([&](uint64_t xid2) {
+  EXPECT_CALL(*request_msg2, setSequenceId(_)).WillOnce(Invoke([&](uint64_t xid2) {
     captured_xid2 = xid2;
   }));
-  EXPECT_CALL(*response_msg2, consumeXID()).WillOnce(Invoke([&] {
+  EXPECT_CALL(*response_msg2, getSequenceId()).WillOnce(Invoke([&] {
     return captured_xid2;
   }));
-  EXPECT_CALL(*response_msg2, consumeString()).WillOnce(Return("response2"));
+
+  std::string response2_body = "response2";
+  EXPECT_CALL(*response_msg2, getBody()).WillOnce(ReturnRef(response2_body));
+  EXPECT_CALL(*response_msg2, getErrorCode()).WillOnce(Return(RpcError::Code::OK));
 
   // When sending, immediately invoke the send callback with OK.
-  EXPECT_CALL(*mock_channel_, sendMessage(_, _))
-      .WillRepeatedly(Invoke([](AsyncCallback&& cob, auto) { cob({OK}); }));
+  EXPECT_CALL(*mock_channel_, sendMessage(_, _, _))
+      .WillRepeatedly(Invoke([](AsyncCallback&& cob, auto, auto) { cob({IOStatus::OK}); }));
 
   // Capture the two receive callbacks.
   AsyncCallback saved_recv_callback1, saved_recv_callback2;
-  EXPECT_CALL(*mock_channel_, recvMessage(_))
+  EXPECT_CALL(*mock_channel_, recvMessage(_, _))
       .Times(2)
-      .WillOnce(Invoke([&](AsyncCallback cob) {
+      .WillOnce(Invoke([&](AsyncCallback cob, auto) {
         saved_recv_callback1 = std::move(cob);
         latch.count_down();
       }))
-      .WillOnce(Invoke([&](AsyncCallback cob) {
+      .WillOnce(Invoke([&](AsyncCallback cob, auto) {
         saved_recv_callback2 = std::move(cob);
         latch.count_down();
       }));
 
-  auto semi1 = client_->call<SomeObject, SomeObject>({})
+  // Act
+  auto semi1 = client_->call<SomeObject, SomeObject>("testMethod", {})
                    .scheduleOn(folly::getGlobalCPUExecutor())
                    .start();
-  auto semi2 = client_->call<SomeObject, SomeObject>({})
+  auto semi2 = client_->call<SomeObject, SomeObject>("testMethod", {})
                    .scheduleOn(folly::getGlobalCPUExecutor())
                    .start();
 
   latch.wait();
 
   // Simulate out-of-order arrival:
-  saved_recv_callback2({OK, response_msg2});
-  saved_recv_callback1({OK, response_msg1});
+  saved_recv_callback2({IOStatus::OK, response_msg2});
+  saved_recv_callback1({IOStatus::OK, response_msg1});
 
   auto responses =
       co_await folly::coro::collectAll(std::move(semi1), std::move(semi2));
   auto& res1 = std::get<0>(responses);
   auto& res2 = std::get<1>(responses);
 
+  // Assert
   EXPECT_EQ(res1.data(), "response1");
   EXPECT_EQ(res2.data(), "response2");
+}
+
+CO_TEST_F(ClientStressTest, ServerError) {
+  // Arrange
+  auto request_msg = std::make_shared<MockMessage>();
+  auto response_msg = std::make_shared<MockMessage>();
+
+  EXPECT_CALL(*mock_channel_, createMessage()).WillOnce(Return(request_msg));
+
+  EXPECT_CALL(*request_msg, setMethod("testMethod"));
+  EXPECT_CALL(*response_msg, getErrorCode())
+      .WillOnce(Return(FAILURE));
+
+  EXPECT_CALL(*mock_channel_, sendMessage(_, _, _))
+      .WillOnce(Invoke([](AsyncCallback&& callback, auto, auto) {
+        callback({IOStatus::OK});
+      }));
+
+  EXPECT_CALL(*mock_channel_, recvMessage(_, _))
+      .WillOnce(Invoke([response_msg](AsyncCallback&& callback, auto) {
+        callback({IOStatus::OK, response_msg});
+      }));
+
+  EXPECT_CALL(*response_msg, getSequenceId()).WillOnce(Return(0));
+  std::string response_body = "some error message";
+  EXPECT_CALL(*response_msg, getBody()).WillOnce(ReturnRef(response_body));
+
+  // Act
+  const auto& respTry = co_await co_awaitTry(
+      client_->call<SomeObject, SomeObject>("testMethod", {}));
+
+  // Assert
+  EXPECT_TRUE(respTry.hasException());
+  respTry.withException<void>([&](const RpcError& e) {
+    EXPECT_EQ(e.code(), RpcError::Code::FAILURE);
+    EXPECT_EQ(e.what(), response_body);
+  });
 }
 
 int main(int argc, char** argv) {

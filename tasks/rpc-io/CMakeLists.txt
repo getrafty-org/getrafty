@@ -86,6 +86,51 @@ set_task_sources(
 #  queue.hpp
 #)
 
+# channel
+
+add_library(
+  ephemeral_channel
+  ephemeral_channel.hpp
+  ephemeral_channel.cpp
+)
+
+add_task_test(
+  ephemeral_channel_test
+  ephemeral_channel_test.cpp
+)
+
+target_link_libraries(
+  ephemeral_channel
+  PRIVATE
+  folly
+  timer
+  thread_pool
+  event_watcher
+)
+
+target_link_libraries(
+  task_tasks_rpc-io_ephemeral_channel_test
+  PRIVATE
+  folly
+  timer
+  thread_pool
+  event_watcher
+  ephemeral_channel
+)
+
+target_compile_options(
+  ephemeral_channel
+  PRIVATE
+  -Wno-error
+)
+target_compile_options(
+  task_tasks_rpc-io_ephemeral_channel_test
+  PRIVATE
+  -Wno-error
+)
+
+#
+
 # client
 add_library(
   client
@@ -100,6 +145,13 @@ add_task_test(
   client.cpp
 )
 
+add_task_test(
+  client_stress_test
+  client_stress_test.cpp
+  client.hpp
+  client.cpp
+)
+
 target_link_libraries(
   client
   PRIVATE
@@ -110,7 +162,7 @@ target_link_libraries(
 )
 
 target_link_libraries(
-  task_tasks_rpc-io_client_test
+  task_tasks_rpc-io_client_stress_test
   PRIVATE
   folly
   timer
@@ -120,6 +172,54 @@ target_link_libraries(
 
 target_compile_options(
   task_tasks_rpc-io_client_test
+  PRIVATE
+  -Wno-error
+)
+
+target_compile_options(
+  task_tasks_rpc-io_client_stress_test
+  PRIVATE
+  -Wno-error
+)
+#
+
+
+# server
+add_library(
+  server
+  server.hpp
+  server.cpp
+)
+
+add_task_test(
+  server_test
+  server_test.cpp
+  server.hpp
+  server.cpp
+)
+
+target_link_libraries(
+  server
+  PRIVATE
+  folly
+  timer
+  thread_pool
+  event_watcher
+  client
+)
+
+target_link_libraries(
+  task_tasks_rpc-io_server_test
+  PRIVATE
+  folly
+  timer
+  thread_pool
+  event_watcher
+  client
+)
+
+target_compile_options(
+  task_tasks_rpc-io_server_test
   PRIVATE
   -Wno-error
 )

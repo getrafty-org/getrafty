@@ -1,93 +1,71 @@
 #include "client.hpp"
 
+#include <folly/coro/Promise.h>
+#include <folly/futures/Future.h>
+#include "folly/coro/BlockingWait.h"
+#include "folly/coro/Collect.h"
+
+#include <utility>
+#include "channel.hpp"
+
 namespace getrafty::rpc {
 
-folly::coro::Task<std::shared_ptr<io::IMessage>> Client::doCall(
-    const io::MessagePtr& message, CallOptions options) {
-  const auto xid = next_xid_++;
-  message->writeXID(xid);
+Client::Client(std::shared_ptr<io::IAsyncChannel> channel)
+    : channel_(std::move(channel)) {}
 
+Client::~Client() = default;
+
+bool Client::Inflight::setException(const RpcError& rpc_error) {
+  if(!fulfilled_.exchange(true)) {
+    promise.setException(rpc_error);
+    return true;
+  }
+  return false;
+}
+
+bool Client::Inflight::setValue(const io::MessagePtr& message) {
+  if(!fulfilled_.exchange(true)) {
+    promise.setValue(message);
+    return true;
+  }
+  return false;
+}
+
+std::shared_ptr<Client::Inflight> Client::peekInflight(uint64_t xid) {
+  std::shared_ptr<Inflight> result;
+  inflight_requests_.withWLock([xid, &result](auto& lock) {
+    auto it = lock.find(xid);
+    if (it != lock.end()) {
+      result = it->second;
+    }
+  });
+  return result;
+
+}
+
+std::pair<uint64_t, folly::Future<std::shared_ptr<io::IMessage>>>
+Client::pushInflight() {
   auto promise = folly::Promise<io::MessagePtr>();
   auto future = promise.getFuture();
-  {
-    std::lock_guard lock(inflight_requests_mutex_);
-    inflight_requests_[xid] = {std::move(promise)};
-  }
 
-  auto send_timeout_timer = timer_->schedule(
-      options.send_timeout, [this, xid, send_timeout = options.send_timeout] {
-        completeInflightWithFunc(xid, [send_timeout](Inflight& in) {
-          in.future.setException(RpcError{
-              RpcError::SEND_TIMEOUT,
-              fmt::format("send timeout after {}ms", send_timeout.count())});
-        });
-      });
+  const auto xid = next_xid_++;
+  inflight_requests_.withWLock([xid, &promise](auto& lock) {
+    lock[xid] = std::make_shared<Inflight>(std::move(promise));
+  });
 
-  channel_->sendMessage(
-      [this, options, xid, send_timeout_timer](const io::Result& send_result) {
-        timer_->cancel(send_timeout_timer);
-
-        if (send_result.status != io::OK) {
-          completeInflight(send_result);
-          return;
-        }
-
-        auto recv_timeout_timer = timer_->schedule(
-            options.recv_timeout,
-            [this, xid, recv_timeout = options.recv_timeout]() {
-              completeInflightWithFunc(xid, [recv_timeout](Inflight& in) {
-                in.future.setException(
-                    RpcError{RpcError::RECV_TIMEOUT,
-                             fmt::format("recv timeout after {}ms",
-                                         recv_timeout.count())});
-              });
-            });
-
-        channel_->recvMessage(
-            [this, recv_timeout_timer](const io::Result& recv_result) {
-              timer_->cancel(recv_timeout_timer);
-              completeInflight(recv_result);
-            });
-      },
-      message);
-
-  co_return co_await std::move(future).semi();
-};
-
-void Client::completeInflight(io::Result result) {
-  if (!result.message) {
-    throw RpcError{RpcError::FAILURE, "result.message is empty"};
-  }
-  const auto xid = result.message->consumeXID();
-
-  if (result.status != io::OK) {
-    completeInflightWithFunc(xid, [](Inflight& p) {
-      p.future.setException(RpcError{RpcError::FAILURE, "IO failed"});
-    });
-    return;
-  }
-
-  // ok
-  completeInflightWithFunc(xid,
-                           [message = std::move(result.message)](Inflight& p) {
-                             p.future.setValue(message);
-                           });
+  return std::make_pair(xid, std::move(future));
 }
 
-void Client::completeInflightWithFunc(
-    const uint64_t xid, std::function<void(Inflight&)>&& do_set_func) {
-  std::optional<Inflight> p;
-  {
-    std::lock_guard lock(inflight_requests_mutex_);
-    auto it = inflight_requests_.find(xid);  // NOLINT
-    if (it != inflight_requests_.end()) {
-      p = std::move(it->second);
-      inflight_requests_.erase(it);
+std::shared_ptr<Client::Inflight> Client::popInflight(uint64_t xid) {
+  std::shared_ptr<Inflight> result;
+  inflight_requests_.withWLock([xid, &result](auto& lock) {
+    auto it = lock.find(xid);
+    if (it != lock.end()) {
+      result = std::move(it->second);
+      lock.erase(it);
     }
-  }
-
-  if (p) {
-    do_set_func(*p);
-  }
+  });
+  return result;
 }
+
 }  // namespace getrafty::rpc
