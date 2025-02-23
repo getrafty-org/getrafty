@@ -6,6 +6,12 @@ add_library(
   thread_pool.hpp
   thread_pool.cpp
 )
+
+target_link_libraries(
+  thread_pool
+  PRIVATE
+  folly
+)
 #
 
 # event_watcher
@@ -20,6 +26,7 @@ target_link_libraries(
   PRIVATE
   fmt::fmt
   thread_pool
+  folly
 )
 
 add_task_test(
@@ -47,6 +54,13 @@ add_library(
 add_task_test(
   timer_test
   timer_test.cpp
+)
+
+target_link_libraries(
+  timer
+  PRIVATE
+  folly
+  thread_pool
 )
 
 target_link_libraries(
@@ -108,6 +122,12 @@ target_link_libraries(
   event_watcher
 )
 
+target_compile_options(
+  ephemeral_channel
+  PRIVATE
+  -Wno-error
+)
+
 target_link_libraries(
   task_tasks_rpc-io_ephemeral_channel_test
   PRIVATE
@@ -118,11 +138,6 @@ target_link_libraries(
   ephemeral_channel
 )
 
-target_compile_options(
-  ephemeral_channel
-  PRIVATE
-  -Wno-error
-)
 target_compile_options(
   task_tasks_rpc-io_ephemeral_channel_test
   PRIVATE

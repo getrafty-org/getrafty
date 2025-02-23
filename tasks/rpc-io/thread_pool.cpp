@@ -1,10 +1,10 @@
-#include <cassert>
-#include <iostream>
-#include <optional>
-
 #include <thread_pool.hpp>
 
+#include <cassert>
+#include <iostream>
+
 namespace getrafty::wheels::concurrent {
+
 ThreadPool::ThreadPool(const size_t threads)
     : state_(NONE), worker_threads_count_(threads) {}
 
@@ -43,7 +43,7 @@ bool ThreadPool::submit(Task&& task) {
     return false;
   }
 
-  worker_queue_.put({task});
+  worker_queue_.put(std::move(task));
   return true;
 }
 

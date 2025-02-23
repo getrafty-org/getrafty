@@ -1,11 +1,23 @@
 #include "ephemeral_channel.hpp"
 
 #include "folly/Singleton.h"
+#include "timer.hpp"
 
 namespace getrafty::rpc::io {
 
-EphemeralChannel::EphemeralChannel(const uint16_t address, std::shared_ptr<ThreadPool> pool)
-    : address_(address), tp_(std::move(pool)) {}
+std::shared_ptr<IAsyncChannel> EphemeralChannel::create(
+    const uint16_t address, const std::shared_ptr<ThreadPool>& pool) {
+  auto channel =
+      std::shared_ptr<EphemeralChannel>(new EphemeralChannel(address, pool));
+  channel->attachChannel();
+  return channel;
+}
+
+EphemeralChannel::EphemeralChannel(const uint16_t address,
+                                   std::shared_ptr<ThreadPool> pool)
+    : address_(address),
+      tp_(std::move(pool)),
+      timer_(std::make_shared<Timer>(EventWatcher::getInstance(), tp_)) {}
 
 EphemeralChannel::~EphemeralChannel() {
   detachChannel();
@@ -13,43 +25,45 @@ EphemeralChannel::~EphemeralChannel() {
 
 void EphemeralChannel::sendMessage(AsyncCallback&& cob, MessagePtr message,
                                    std::chrono::milliseconds) {
-  const auto peer = findPeer();
-  if (!peer) {
-    cob({SOCK_CLOSED, nullptr});
-    // scheduleCallback(std::move([cob = std::move(cob)]() mutable {
-    //   cob({SOCK_CLOSED, nullptr});
-    // }));
+  if (const auto peer = findPeer(); !peer) {
+    tp_->submit([cob = std::move(cob)]() mutable {
+      cob({SOCK_CLOSED});
+    });
     return;
   }
 
-  cob({OK, nullptr});
-  // scheduleCallback(std::move([cob = std::move(cob)]() mutable {
-  //   cob({OK, nullptr});
-  // }));
-
-  peer->deliver(std::move(message));
+  tp_->submit([this, cob = std::move(cob), message = std::move(message)]() mutable {
+    if (const auto peer = findPeer(); peer) {
+      cob({OK});
+      peer->deliver(std::move(message));
+    }
+  });
 }
 
 void EphemeralChannel::recvMessage(AsyncCallback&& cob,
-                                   std::chrono::milliseconds) {
+                                   const std::chrono::milliseconds timeout) {
   std::unique_lock lock(channelMutex_);
   if (!inbox_.empty()) {
     const auto msg = pickMessage();
     lock.unlock();
-    cob({OK, msg});
-    // scheduleCallback(std::move([msg = std::move(msg), cob = std::move(cob)]() mutable {
-    //       cob({OK, msg});
-    // }));
+    cob({IOStatus::OK, msg});
     return;
   }
 
-  callbacks_.push_back(std::move(cob));
-}
-std::shared_ptr<IAsyncChannel> EphemeralChannel::create(
-    const uint16_t address, const std::shared_ptr<ThreadPool>& pool) {
-  auto channel = std::shared_ptr<EphemeralChannel>(new EphemeralChannel(address, pool));
-  channel->attachChannel();
-  return channel;
+  auto cob_ptr = std::make_shared<std::atomic<bool>>(false);
+  auto wrapped_cob = std::make_shared<AsyncCallback>(std::move(cob));
+  auto ticket = timer_->schedule(timeout, [cob_ptr, wrapped_cob]() mutable {
+    if (!cob_ptr->exchange(true)) {
+      (*wrapped_cob)({IO_TIMEOUT});
+    }
+  });
+
+  callbacks_.emplace_back([this, cob_ptr, wrapped_cob, ticket](const Result& result) mutable {
+    if (!cob_ptr->exchange(true)) {
+      timer_->cancel(ticket);
+      (*wrapped_cob)(result);
+    }
+  });
 }
 
 void EphemeralChannel::attachChannel() {
@@ -70,34 +84,35 @@ void EphemeralChannel::detachChannel() const {
   if (it == registry_.end()) {
     return;
   }
-  auto& pair = it->second;
-  auto selfPtr = this;
-
-  auto f = pair.first.lock();
+  const auto selfPtr = this;
+  auto& [first, second] = it->second;
+  const auto f = first.lock();
   if (f.get() == selfPtr) {
-    pair.first.reset();
+    first.reset();
   }
-  auto s = pair.second.lock();
+  const auto s = second.lock();
   if (s.get() == selfPtr) {
-    pair.second.reset();
+    second.reset();
   }
-  if (pair.first.expired() && pair.second.expired()) {
+
+  if (first.expired() && second.expired()) {
     registry_.erase(it);
   }
 }
 std::shared_ptr<EphemeralChannel> EphemeralChannel::findPeer() const {
-  std::lock_guard<std::mutex> g(registryMutex_);
-  auto it = registry_.find(address_);
+  std::lock_guard g(registryMutex_);
+  const auto it = registry_.find(address_);
   if (it == registry_.end()) {
     return nullptr;
   }
-  auto& pair = it->second;
-  auto selfRaw = this;
-  auto f = pair.first.lock();
-  auto s = pair.second.lock();
+  const auto selfRaw = this;
+  const auto& [first, second] = it->second;
+  auto f = first.lock();
+  auto s = second.lock();
   if (f.get() == selfRaw) {
     return s;
-  } else if (s.get() == selfRaw) {
+  }
+  if (s.get() == selfRaw) {
     return f;
   }
   return nullptr;
@@ -105,18 +120,17 @@ std::shared_ptr<EphemeralChannel> EphemeralChannel::findPeer() const {
 
 void EphemeralChannel::deliver(MessagePtr msg) {
   std::unique_lock lock(channelMutex_);
-  if (!callbacks_.empty()) {
-    auto cob = std::move(callbacks_.front());
-    callbacks_.erase(callbacks_.begin());
-    lock.unlock();
-    cob({OK, msg});
-    // scheduleCallback([cob = std::move(cob), msg = std::move(msg)]() mutable {
-    //     cob({OK, msg});
-    // });
+  if (callbacks_.empty()) {
+    inbox_.push_back(std::move(msg));
     return;
   }
 
-  inbox_.push_back(std::move(msg));
+  auto cob = std::move(callbacks_.front());
+  callbacks_.erase(callbacks_.begin());
+  lock.unlock();
+  tp_->submit([cob = std::move(cob), msg = std::move(msg)]() mutable {
+    cob({OK, msg});
+  });
 }
 
 MessagePtr EphemeralChannel::pickMessage() {
@@ -128,11 +142,5 @@ MessagePtr EphemeralChannel::pickMessage() {
   return msg;
 }
 
-void EphemeralChannel::scheduleCallback(std::function<void()>&& fn) const {
-  if (!tp_->submit(std::move(fn))) {
-    // If the queue is full or the pool is stopping, callback is lost
-    // (in a real implementation you might want to handle this gracefully)
-  }
-}
 
 }  // namespace getrafty::rpc::io

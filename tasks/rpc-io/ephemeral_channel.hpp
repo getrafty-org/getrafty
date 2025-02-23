@@ -6,6 +6,7 @@
 #include "channel.hpp"
 #include "folly/Synchronized.h"
 #include "thread_pool.hpp"
+#include "timer.hpp"
 
 namespace getrafty::rpc::io {
 
@@ -13,6 +14,7 @@ using wheels::concurrent::ThreadPool;
 using rpc::RpcError;
 
 namespace detail {
+
 struct EphemeralMessage final : IMessage {
   EphemeralMessage() = default;
 
@@ -51,6 +53,7 @@ struct EphemeralMessage final : IMessage {
   uint64_t sequenceId_{0};
   RpcError::Code errorCode_{RpcError::Code::OK};
 };
+
 }  // namespace detail
 
 class EphemeralChannel final
@@ -93,10 +96,10 @@ class EphemeralChannel final
 
   MessagePtr pickMessage();
 
-  void scheduleCallback(std::function<void()>&& fn) const;
 
   uint16_t address_;
   std::shared_ptr<ThreadPool> tp_;
+  std::shared_ptr<Timer> timer_;
 
   std::mutex channelMutex_;
   std::vector<MessagePtr> inbox_;
