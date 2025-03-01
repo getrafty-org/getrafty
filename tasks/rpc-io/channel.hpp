@@ -26,8 +26,10 @@ class IAsyncChannel {
 
   virtual MessagePtr createMessage() = 0;
 
+  virtual void open() = 0;
+  virtual void close() = 0;
+  virtual bool isOpen() = 0;
   virtual void sendMessage(AsyncCallback&& cob, MessagePtr message, std::chrono::milliseconds) = 0;
-
   virtual void recvMessage(AsyncCallback&& cob, std::chrono::milliseconds) = 0;
 };
 

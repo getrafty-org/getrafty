@@ -11,9 +11,13 @@
 namespace getrafty::rpc {
 
 Client::Client(std::shared_ptr<io::IAsyncChannel> channel)
-    : channel_(std::move(channel)) {}
+    : channel_(std::move(channel)) {
+  channel_->open();
+}
 
-Client::~Client() = default;
+Client::~Client() {
+  channel_->close();
+};
 
 bool Client::Inflight::setException(const RpcError& rpc_error) {
   if(!fulfilled_.exchange(true)) {

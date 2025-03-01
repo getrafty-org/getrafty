@@ -12,6 +12,6 @@ public:
   virtual folly::coro::Task<std::shared_ptr<IAsyncChannel>> accept() = 0;
 };
 
-using IListenerFactory = std::function<IListener(const std::string&)>;
+using IListenerFactory = std::function<std::shared_ptr<IListener>(const std::string&)>;
 
 } // namespace getrafty::rpc::io

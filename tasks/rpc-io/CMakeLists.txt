@@ -160,13 +160,6 @@ add_task_test(
   client.cpp
 )
 
-add_task_test(
-  client_stress_test
-  client_stress_test.cpp
-  client.hpp
-  client.cpp
-)
-
 target_link_libraries(
   client
   PRIVATE
@@ -174,6 +167,20 @@ target_link_libraries(
   timer
   thread_pool
   event_watcher
+  ephemeral_channel
+)
+
+target_compile_options(
+  client
+  PRIVATE
+  -Wno-error
+)
+
+add_task_test(
+  client_stress_test
+  client_stress_test.cpp
+  client.hpp
+  client.cpp
 )
 
 target_link_libraries(
@@ -206,13 +213,6 @@ add_library(
   server.cpp
 )
 
-add_task_test(
-  server_test
-  server_test.cpp
-  server.hpp
-  server.cpp
-)
-
 target_link_libraries(
   server
   PRIVATE
@@ -221,6 +221,19 @@ target_link_libraries(
   thread_pool
   event_watcher
   client
+)
+
+target_compile_options(
+  server
+  PRIVATE
+  -Wno-error
+)
+
+add_task_test(
+  server_test
+  server_test.cpp
+  server.hpp
+  server.cpp
 )
 
 target_link_libraries(

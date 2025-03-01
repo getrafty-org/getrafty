@@ -25,25 +25,21 @@ public:
 
 class Server {
  public:
-  explicit Server(std::string  address);
+  explicit Server(const std::shared_ptr<io::IListener>&);
   ~Server() = default;
-
-  void setListenerFactory(const std::shared_ptr<io::IListenerFactory>& factory);
 
   template <typename TReq, typename TResp>
   requires SerializableCallPair<TReq, TResp> void addHandler(
       const std::string& method, HandlerFunc<TReq, TResp> handler);
 
   folly::coro::Task<> start();
-
   folly::coro::Task<> stop();
 
  private:
   std::string address_;
-  std::shared_ptr<io::IListenerFactory> listener_factory_;
 
-  folly::coro::CancellableAsyncScope asyncScope_;
-  std::shared_ptr<io::IListener> listener_{};
+  folly::coro::AsyncScope scope_;
+  std::shared_ptr<io::IListener> listener_;
   folly::Synchronized<std::unordered_map<std::string, std::shared_ptr<IHandlerWrapper>>> handlerRegistry_;
 
   std::atomic<bool> is_running_{false};

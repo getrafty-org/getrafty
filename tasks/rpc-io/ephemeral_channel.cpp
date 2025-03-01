@@ -17,37 +17,55 @@ EphemeralChannel::EphemeralChannel(const uint16_t address,
                                    std::shared_ptr<ThreadPool> pool)
     : address_(address),
       tp_(std::move(pool)),
-      timer_(std::make_shared<Timer>(EventWatcher::getInstance(), tp_)) {}
+      timer_(std::make_shared<Timer>(EventWatcher::getInstance(), tp_)){}
 
 EphemeralChannel::~EphemeralChannel() {
   detachChannel();
 }
+void EphemeralChannel::open() {
+  if(!is_open_.exchange(true)) {
+  }
+}
+
+void EphemeralChannel::close() {
+  if (is_open_.exchange(false)) {
+    if (on_close_) {
+      (*on_close_)(shared_from_this());
+    }
+  }
+}
+
+bool EphemeralChannel::isOpen() {
+  return is_open_;
+}
 
 void EphemeralChannel::sendMessage(AsyncCallback&& cob, MessagePtr message,
                                    std::chrono::milliseconds) {
+  assert(is_open_);
+  assert(message);
   if (const auto peer = findPeer(); !peer) {
     tp_->submit([cob = std::move(cob)]() mutable {
       cob({SOCK_CLOSED});
     });
-    return;
-  }
-
-  tp_->submit([this, cob = std::move(cob), message = std::move(message)]() mutable {
-    if (const auto peer = findPeer(); peer) {
+  } else {
+    tp_->submit([this, cob = std::move(cob)]() mutable {
       cob({OK});
-      peer->deliver(std::move(message));
-    }
-  });
+    });
+    peer->deliver(std::move(message));
+  }
 }
 
 void EphemeralChannel::recvMessage(AsyncCallback&& cob,
                                    const std::chrono::milliseconds timeout) {
-  std::unique_lock lock(channelMutex_);
-  if (!inbox_.empty()) {
-    const auto msg = pickMessage();
-    lock.unlock();
-    cob({IOStatus::OK, msg});
-    return;
+  assert(is_open_);
+  const auto lock = inbox_.wlock();
+  if (!lock->ready.empty()) {
+    const auto m = lock->ready.front();
+    lock->ready.erase(lock->ready.begin());
+    if(cob) {
+      cob({OK, m});
+    }
+
   }
 
   auto cob_ptr = std::make_shared<std::atomic<bool>>(false);
@@ -58,7 +76,7 @@ void EphemeralChannel::recvMessage(AsyncCallback&& cob,
     }
   });
 
-  callbacks_.emplace_back([this, cob_ptr, wrapped_cob, ticket](const Result& result) mutable {
+  lock->consumers.emplace_back([this, cob_ptr, wrapped_cob, ticket](const Result& result) mutable {
     if (!cob_ptr->exchange(true)) {
       timer_->cancel(ticket);
       (*wrapped_cob)(result);
@@ -119,28 +137,26 @@ std::shared_ptr<EphemeralChannel> EphemeralChannel::findPeer() const {
 }
 
 void EphemeralChannel::deliver(MessagePtr msg) {
-  std::unique_lock lock(channelMutex_);
-  if (callbacks_.empty()) {
-    inbox_.push_back(std::move(msg));
+  assert(msg);
+  auto lock = inbox_.wlock();
+  if (lock->consumers.empty()) {
+    lock->ready.emplace_back(msg);
     return;
   }
 
-  auto cob = std::move(callbacks_.front());
-  callbacks_.erase(callbacks_.begin());
+  // somebody is ready to consume message right now
+  auto cob = std::move(lock->consumers.front());
+  lock->consumers.erase(lock->consumers.begin());
   lock.unlock();
   tp_->submit([cob = std::move(cob), msg = std::move(msg)]() mutable {
     cob({OK, msg});
   });
 }
 
-MessagePtr EphemeralChannel::pickMessage() {
-  thread_local std::mt19937 rng{std::random_device{}()};
-  auto dist = std::uniform_int_distribution<size_t>(0, inbox_.size() - 1);
-  const size_t idx = dist(rng);
-  auto msg = inbox_[idx];
-  inbox_.erase(idx + inbox_.begin());
-  return msg;
-}
 
+void EphemeralChannel::setOnCloseCallback(
+    std::shared_ptr<std::function<void(std::shared_ptr<IAsyncChannel>)>> callback) {
+  on_close_ = std::move(callback);
+}
 
 }  // namespace getrafty::rpc::io

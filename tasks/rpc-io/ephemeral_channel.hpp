@@ -66,12 +66,17 @@ class EphemeralChannel final
     return std::make_shared<detail::EphemeralMessage>();
   }
 
+  void open() override;
+  void close() override;
+  bool isOpen() override;
   void sendMessage(AsyncCallback&& cob, MessagePtr message,
                    std::chrono::milliseconds /*timeout*/) override;
-
-
   void recvMessage(AsyncCallback&& cob,
                    std::chrono::milliseconds /*timeout*/) override;
+
+  void setOnCloseCallback(
+      std::shared_ptr<std::function<void(std::shared_ptr<IAsyncChannel>)>>
+          callback);
 
   static std::shared_ptr<IAsyncChannel> create(uint16_t address,
                    const std::shared_ptr<ThreadPool>& pool);
@@ -94,16 +99,20 @@ class EphemeralChannel final
 
   void deliver(MessagePtr msg);
 
-  MessagePtr pickMessage();
 
-
+ private:
+  struct Inbox {
+    std::vector<MessagePtr> ready;
+    std::vector<AsyncCallback> consumers;
+  };
   uint16_t address_;
   std::shared_ptr<ThreadPool> tp_;
   std::shared_ptr<Timer> timer_;
 
-  std::mutex channelMutex_;
-  std::vector<MessagePtr> inbox_;
-  std::vector<AsyncCallback> callbacks_;
+  folly::Synchronized<Inbox> inbox_;
+
+  std::atomic<bool> is_open_{false};
+  std::shared_ptr<std::function<void(std::shared_ptr<IAsyncChannel>)>> on_close_;
 };
 
 }  // namespace getrafty::rpc::io
