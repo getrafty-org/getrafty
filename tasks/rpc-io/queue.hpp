@@ -1,10 +1,6 @@
 #pragma once
 
-#include <atomic>
-#include <cassert>
 #include <deque>
-#include <functional>
-#include <vector>
 #include <mutex>
 
 namespace getrafty::wheels::concurrent {
@@ -25,12 +21,14 @@ class UnboundedBlockingQueue {
   ~UnboundedBlockingQueue() = default;
 
   void put(T v) {
+    // ==== YOUR CODE: @b27057d1 ====
     std::unique_lock lock(mutex_);
     q_.emplace_back(std::move(v));
+    // ==== END YOUR CODE ====
   }
 
   T take() {
-    // Your code goes here instead of the below snippet
+    // ==== YOUR CODE: @48ddb17c ====
     while (true) {
       std::unique_lock lock(mutex_);
       if (q_.empty()) {
@@ -42,6 +40,7 @@ class UnboundedBlockingQueue {
 
       return std::move(v);
     }
+    // ==== END YOUR CODE ====
   }
 
  private:

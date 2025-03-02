@@ -10,7 +10,7 @@
 
 namespace getrafty::rpc {
 
-Client::Client(std::shared_ptr<io::IAsyncChannel> channel)
+Client::Client(std::shared_ptr<io::IClientSocket> channel)
     : channel_(std::move(channel)) {
   channel_->open();
 }

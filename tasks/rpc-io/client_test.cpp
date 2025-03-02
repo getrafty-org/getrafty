@@ -43,7 +43,7 @@ class MockMessage : public IMessage {
               constructFromCurrent, (), (override));
 };
 
-class MockChannel : public IAsyncChannel {
+class MockChannel : public IClientSocket {
  public:
   MOCK_METHOD(MessagePtr, createMessage, (), (override));
   MOCK_METHOD(void, sendMessage,

@@ -5,7 +5,7 @@
 #include <folly/experimental/coro/Baton.h>
 #include <folly/experimental/coro/Task.h>
 
-namespace getrafty::wheels::concurrent {
+namespace getrafty::wheels::concurrent::coro {
 
 template <typename T>
 class UnboundedBlockingQueue {
@@ -60,4 +60,4 @@ private:
   std::deque<Waiter*> waiters_;
 };
 
-}  // namespace getrafty::wheels::concurrent
+}  // namespace getrafty::wheels::concurrent::coro

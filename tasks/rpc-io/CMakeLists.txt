@@ -103,18 +103,18 @@ set_task_sources(
 # channel
 
 add_library(
-  ephemeral_channel
-  ephemeral_channel.hpp
-  ephemeral_channel.cpp
+  ephemeral_transport
+  ephemeral_transport.hpp
+  ephemeral_transport.cpp
 )
 
 add_task_test(
-  ephemeral_channel_test
-  ephemeral_channel_test.cpp
+  ephemeral_transport_test
+  ephemeral_transport_test.cpp
 )
 
 target_link_libraries(
-  ephemeral_channel
+  ephemeral_transport
   PRIVATE
   folly
   timer
@@ -123,23 +123,23 @@ target_link_libraries(
 )
 
 target_compile_options(
-  ephemeral_channel
+  ephemeral_transport
   PRIVATE
   -Wno-error
 )
 
 target_link_libraries(
-  task_tasks_rpc-io_ephemeral_channel_test
+  task_tasks_rpc-io_ephemeral_transport_test
   PRIVATE
   folly
   timer
   thread_pool
   event_watcher
-  ephemeral_channel
+  ephemeral_transport
 )
 
 target_compile_options(
-  task_tasks_rpc-io_ephemeral_channel_test
+  task_tasks_rpc-io_ephemeral_transport_test
   PRIVATE
   -Wno-error
 )
@@ -167,7 +167,7 @@ target_link_libraries(
   timer
   thread_pool
   event_watcher
-  ephemeral_channel
+  ephemeral_transport
 )
 
 target_compile_options(
@@ -251,6 +251,39 @@ target_compile_options(
   PRIVATE
   -Wno-error
 )
+#
+
+# coro::queue
+add_library(
+  coro_queue
+  coro/queue.hpp
+)
+
+add_task_test(
+  coro_queue_test
+  coro/queue_test.cpp
+)
+
+target_link_libraries(
+  coro_queue
+  PRIVATE
+  folly
+)
+
+target_link_libraries(
+  task_tasks_rpc-io_coro_queue_test
+  PRIVATE
+  gtest
+  folly
+  gmock
+)
+
+target_compile_options(
+  task_tasks_rpc-io_coro_queue_test
+  PRIVATE
+  -Wno-error
+)
+
 #
 
 end_task()

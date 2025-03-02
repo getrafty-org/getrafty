@@ -28,7 +28,7 @@ class Client {
     std::chrono::milliseconds recv_timeout;
   };
 
-  explicit Client(std::shared_ptr<io::IAsyncChannel> channel);
+  explicit Client(std::shared_ptr<io::IClientSocket> channel);
   ~Client();
 
   template <typename TReq, typename TResp>
@@ -47,7 +47,7 @@ class Client {
     folly::Promise<io::MessagePtr> promise;
   };
 
-  std::shared_ptr<io::IAsyncChannel> channel_;
+  std::shared_ptr<io::IClientSocket> channel_;
 
   std::atomic<uint64_t> next_xid_{0};
   folly::Synchronized<std::unordered_map<uint64_t, std::shared_ptr<Inflight>>>

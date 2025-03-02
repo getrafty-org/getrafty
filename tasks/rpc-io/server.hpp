@@ -48,7 +48,7 @@ class Server {
   folly::coro::Task<io::MessagePtr> dispatch(io::MessagePtr msg);
 
   struct Connection {
-    explicit Connection(const std::shared_ptr<io::IAsyncChannel>& channel,
+    explicit Connection(const std::shared_ptr<io::IClientSocket>& channel,
                         Server* server)
         : server_(server), channel_(channel) {}
 
@@ -57,7 +57,7 @@ class Server {
     // TODO: stop
 
     Server* server_;
-    std::shared_ptr<io::IAsyncChannel> channel_;
+    std::shared_ptr<io::IClientSocket> channel_;
   };
 };
 

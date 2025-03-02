@@ -6,7 +6,7 @@
 #include <memory>
 
 #include "client.hpp"
-#include "ephemeral_channel.hpp"
+#include "ephemeral_transport.hpp"
 #include "server.hpp"
 
 #include "folly/MPMCQueue.h"
@@ -41,8 +41,8 @@ class EphemeralListener final : public IListener {
     const auto channel = EphemeralChannel::create(address_, tp_);
     if (const auto p = dynamic_cast<EphemeralChannel*>(channel.get())) {
       p->setOnCloseCallback(
-          std::make_shared<std::function<void(std::shared_ptr<IAsyncChannel>)>>(
-              [this](const std::shared_ptr<IAsyncChannel>& chan) {
+          std::make_shared<std::function<void(std::shared_ptr<IClientSocket>)>>(
+              [this](const std::shared_ptr<IClientSocket>& chan) {
                 chan->open();
                 queue_.write(chan);
               }));
@@ -52,14 +52,14 @@ class EphemeralListener final : public IListener {
   }
 
   ~EphemeralListener() override {
-    if (std::shared_ptr<IAsyncChannel> ch; queue_.read(ch)) {
+    if (std::shared_ptr<IClientSocket> ch; queue_.read(ch)) {
       ch->close();
     }
     tp_->stop();
   }
 
-  folly::coro::Task<std::shared_ptr<IAsyncChannel>> accept() override {
-    std::shared_ptr<IAsyncChannel> ch;
+  folly::coro::Task<std::shared_ptr<IClientSocket>> accept() override {
+    std::shared_ptr<IClientSocket> ch;
     queue_.blockingRead(ch);
     assert(ch);
     co_return ch;
@@ -68,7 +68,7 @@ class EphemeralListener final : public IListener {
  private:
   uint16_t address_;
   std::shared_ptr<ThreadPool> tp_;
-  folly::MPMCQueue<std::shared_ptr<IAsyncChannel>> queue_{1};
+  folly::MPMCQueue<std::shared_ptr<IClientSocket>> queue_{1};
 };
 
 class ServerTest : public ::testing::Test {

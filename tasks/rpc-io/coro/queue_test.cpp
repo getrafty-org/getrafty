@@ -11,7 +11,7 @@
 #include "folly/coro/Sleep.h"
 
 using namespace std::chrono_literals;
-using namespace getrafty::wheels::concurrent;
+using namespace getrafty::wheels::concurrent::coro;
 
 class UnboundedBlockingQueueTest : public ::testing::Test {};
 
