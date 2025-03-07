@@ -4,7 +4,6 @@
 #include <folly/futures/Future.h>
 #include <future>
 #include <utility>
-#include "channel.hpp"
 #include "error.hpp"
 #include "folly/coro/AsyncScope.h"
 #include "folly/stop_watch.h"

@@ -1,0 +1,697 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						13
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.29"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "third-party",
+					"childIndexes" : 
+					[
+						2,
+						3,
+						4,
+						5,
+						8,
+						9
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-third-party-Debug-7183733e04eb08534624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.29"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "third-party"
+				},
+				{
+					"build" : "_deps/fmt-build",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.fmt-build-Debug-30183072c10afe325c90.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 1,
+					"source" : "cmake-build-debug-coverage/_deps/fmt-src",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "_deps/function2-build",
+					"jsonFile" : "directory-_deps.function2-build-Debug-e3358f94ce7dd743bbc2.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.11"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 2,
+					"source" : "cmake-build-debug-coverage/_deps/function2-src"
+				},
+				{
+					"build" : "_deps/moodycamel-build",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.moodycamel-build-Debug-bc7232e8ffceb5f09979.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.9"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 3,
+					"source" : "cmake-build-debug-coverage/_deps/moodycamel-src"
+				},
+				{
+					"build" : "_deps/googletest-build",
+					"childIndexes" : 
+					[
+						6
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.googletest-build-Debug-f0f433fb607afc7c3f1d.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.5"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 4,
+					"source" : "cmake-build-debug-coverage/_deps/googletest-src"
+				},
+				{
+					"build" : "_deps/googletest-build/googlemock",
+					"childIndexes" : 
+					[
+						7
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.googletest-build.googlemock-Debug-985364e2a110ffda832e.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.5"
+					},
+					"parentIndex" : 5,
+					"projectIndex" : 5,
+					"source" : "cmake-build-debug-coverage/_deps/googletest-src/googlemock",
+					"targetIndexes" : 
+					[
+						12,
+						13
+					]
+				},
+				{
+					"build" : "_deps/googletest-build/googletest",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.googletest-build.googletest-Debug-c1084cd5231480163e35.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.5"
+					},
+					"parentIndex" : 6,
+					"projectIndex" : 6,
+					"source" : "cmake-build-debug-coverage/_deps/googletest-src/googletest",
+					"targetIndexes" : 
+					[
+						14,
+						15
+					]
+				},
+				{
+					"build" : "_deps/json-build",
+					"jsonFile" : "directory-_deps.json-build-Debug-9cffd6d36519aeb34198.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 7,
+					"source" : "cmake-build-debug-coverage/_deps/json-src"
+				},
+				{
+					"build" : "third-party/folly",
+					"childIndexes" : 
+					[
+						10
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-third-party.folly-Debug-0631111a9afa384bf8da.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0.2"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 8,
+					"source" : "third-party/folly",
+					"targetIndexes" : 
+					[
+						5,
+						6,
+						10
+					]
+				},
+				{
+					"build" : "third-party/folly/folly",
+					"childIndexes" : 
+					[
+						11,
+						12
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-third-party.folly.folly-Debug-c4ece8cea7c74a862226.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0.2"
+					},
+					"parentIndex" : 9,
+					"projectIndex" : 8,
+					"source" : "third-party/folly/folly",
+					"targetIndexes" : 
+					[
+						11
+					]
+				},
+				{
+					"build" : "third-party/folly/folly/debugging/exception_tracer",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-third-party.folly.folly.debugging.exception_tracer-Debug-6c54a922fb95eba4aad4.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0.2"
+					},
+					"parentIndex" : 10,
+					"projectIndex" : 8,
+					"source" : "third-party/folly/folly/debugging/exception_tracer",
+					"targetIndexes" : 
+					[
+						7,
+						8,
+						9
+					]
+				},
+				{
+					"build" : "third-party/folly/folly/logging/example",
+					"jsonFile" : "directory-third-party.folly.folly.logging.example-Debug-7bec284a18fe186e545b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0.2"
+					},
+					"parentIndex" : 10,
+					"projectIndex" : 8,
+					"source" : "third-party/folly/folly/logging/example",
+					"targetIndexes" : 
+					[
+						16,
+						17
+					]
+				},
+				{
+					"build" : "tasks",
+					"childIndexes" : 
+					[
+						14,
+						15,
+						16,
+						17
+					],
+					"jsonFile" : "directory-tasks-Debug-a360a5b7067a623185bb.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.29"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "tasks"
+				},
+				{
+					"build" : "tasks/tutorial",
+					"jsonFile" : "directory-tasks.tutorial-Debug-eca46f42bb30486720ca.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.29"
+					},
+					"parentIndex" : 13,
+					"projectIndex" : 0,
+					"source" : "tasks/tutorial",
+					"targetIndexes" : 
+					[
+						28
+					]
+				},
+				{
+					"build" : "tasks/thread-pool",
+					"jsonFile" : "directory-tasks.thread-pool-Debug-e7d3205c1eba4fc8b970.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.29"
+					},
+					"parentIndex" : 13,
+					"projectIndex" : 0,
+					"source" : "tasks/thread-pool",
+					"targetIndexes" : 
+					[
+						27
+					]
+				},
+				{
+					"build" : "tasks/rpc-io",
+					"jsonFile" : "directory-tasks.rpc-io-Debug-7358b80c52558ed2a06f.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.29"
+					},
+					"parentIndex" : 13,
+					"projectIndex" : 0,
+					"source" : "tasks/rpc-io",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						18,
+						20,
+						21,
+						22,
+						23,
+						24,
+						25,
+						26,
+						29,
+						30
+					]
+				},
+				{
+					"build" : "tasks/myfs",
+					"jsonFile" : "directory-tasks.myfs-Debug-5237de1cc82848099afa.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.29"
+					},
+					"parentIndex" : 13,
+					"projectIndex" : 0,
+					"source" : "tasks/myfs",
+					"targetIndexes" : 
+					[
+						19
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4,
+						7,
+						8
+					],
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						13,
+						14,
+						15,
+						16,
+						17
+					],
+					"name" : "getrafty",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						18,
+						19,
+						20,
+						21,
+						22,
+						23,
+						24,
+						25,
+						26,
+						27,
+						28,
+						29,
+						30
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						2
+					],
+					"name" : "FMT",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						3
+					],
+					"name" : "function2",
+					"parentIndex" : 0
+				},
+				{
+					"directoryIndexes" : 
+					[
+						4
+					],
+					"name" : "concurrentqueue",
+					"parentIndex" : 0
+				},
+				{
+					"childIndexes" : 
+					[
+						5
+					],
+					"directoryIndexes" : 
+					[
+						5
+					],
+					"name" : "googletest-distribution",
+					"parentIndex" : 0
+				},
+				{
+					"childIndexes" : 
+					[
+						6
+					],
+					"directoryIndexes" : 
+					[
+						6
+					],
+					"name" : "gmock",
+					"parentIndex" : 4,
+					"targetIndexes" : 
+					[
+						12,
+						13
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						7
+					],
+					"name" : "gtest",
+					"parentIndex" : 5,
+					"targetIndexes" : 
+					[
+						14,
+						15
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						8
+					],
+					"name" : "nlohmann_json",
+					"parentIndex" : 0
+				},
+				{
+					"directoryIndexes" : 
+					[
+						9,
+						10,
+						11,
+						12
+					],
+					"name" : "folly",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						16,
+						17
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 16,
+					"id" : "client::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-client-Debug-f7bb6da35c0948ef7145.json",
+					"name" : "client",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "coro_queue::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-coro_queue-Debug-44075f48500a429d15f1.json",
+					"name" : "coro_queue",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "ephemeral_transport::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-ephemeral_transport-Debug-27fb75edd4d21ffff61e.json",
+					"name" : "ephemeral_transport",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "event_watcher::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-event_watcher-Debug-40a2bcb976e5e043678d.json",
+					"name" : "event_watcher",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "fmt::@976f4f0bee90b99ecdb6",
+					"jsonFile" : "target-fmt-Debug-7def98723eea4d3013c9.json",
+					"name" : "fmt",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 9,
+					"id" : "folly::@99b2e6160ccd356f445d",
+					"jsonFile" : "target-folly-Debug-593ffbce0e2874e4ae26.json",
+					"name" : "folly",
+					"projectIndex" : 8
+				},
+				{
+					"directoryIndex" : 9,
+					"id" : "folly_base::@99b2e6160ccd356f445d",
+					"jsonFile" : "target-folly_base-Debug-7c6439c2fef7989f8c1e.json",
+					"name" : "folly_base",
+					"projectIndex" : 8
+				},
+				{
+					"directoryIndex" : 11,
+					"id" : "folly_exception_counter::@6c55624fe8a5182cf12a",
+					"jsonFile" : "target-folly_exception_counter-Debug-5e8f81a106859c739bd8.json",
+					"name" : "folly_exception_counter",
+					"projectIndex" : 8
+				},
+				{
+					"directoryIndex" : 11,
+					"id" : "folly_exception_tracer::@6c55624fe8a5182cf12a",
+					"jsonFile" : "target-folly_exception_tracer-Debug-8969e42b3795c78bb2e0.json",
+					"name" : "folly_exception_tracer",
+					"projectIndex" : 8
+				},
+				{
+					"directoryIndex" : 11,
+					"id" : "folly_exception_tracer_base::@6c55624fe8a5182cf12a",
+					"jsonFile" : "target-folly_exception_tracer_base-Debug-b2a684f2a3c3e4491e7c.json",
+					"name" : "folly_exception_tracer_base",
+					"projectIndex" : 8
+				},
+				{
+					"directoryIndex" : 9,
+					"id" : "folly_test_util::@99b2e6160ccd356f445d",
+					"jsonFile" : "target-folly_test_util-Debug-7fc7ba0fa817d17651c9.json",
+					"name" : "folly_test_util",
+					"projectIndex" : 8
+				},
+				{
+					"directoryIndex" : 10,
+					"id" : "follybenchmark::@9142933b9a346173ee57",
+					"jsonFile" : "target-follybenchmark-Debug-5e29cc9082b201347294.json",
+					"name" : "follybenchmark",
+					"projectIndex" : 8
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "gmock::@0f7bb11d64f3678238c7",
+					"jsonFile" : "target-gmock-Debug-8f3c518a11b4b7261b17.json",
+					"name" : "gmock",
+					"projectIndex" : 5
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "gmock_main::@0f7bb11d64f3678238c7",
+					"jsonFile" : "target-gmock_main-Debug-d5af282cf6069a868b6c.json",
+					"name" : "gmock_main",
+					"projectIndex" : 5
+				},
+				{
+					"directoryIndex" : 7,
+					"id" : "gtest::@1ea2dfc0605fe3ab2a3f",
+					"jsonFile" : "target-gtest-Debug-a4d0342a189fd4c2a33a.json",
+					"name" : "gtest",
+					"projectIndex" : 6
+				},
+				{
+					"directoryIndex" : 7,
+					"id" : "gtest_main::@1ea2dfc0605fe3ab2a3f",
+					"jsonFile" : "target-gtest_main-Debug-94d2a7e55a730821f053.json",
+					"name" : "gtest_main",
+					"projectIndex" : 6
+				},
+				{
+					"directoryIndex" : 12,
+					"id" : "logging_example::@00634f4286a7c06274f3",
+					"jsonFile" : "target-logging_example-Debug-aebf20fe591d2a67e02d.json",
+					"name" : "logging_example",
+					"projectIndex" : 8
+				},
+				{
+					"directoryIndex" : 12,
+					"id" : "logging_example_lib::@00634f4286a7c06274f3",
+					"jsonFile" : "target-logging_example_lib-Debug-dc14339fd295e6b49278.json",
+					"name" : "logging_example_lib",
+					"projectIndex" : 8
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "server::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-server-Debug-c489427ae4f7889fef20.json",
+					"name" : "server",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 17,
+					"id" : "task_tasks_myfs_myfs_server_test::@97213c7ff2423961590f",
+					"jsonFile" : "target-task_tasks_myfs_myfs_server_test-Debug-066261f360c672f31d2a.json",
+					"name" : "task_tasks_myfs_myfs_server_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "task_tasks_rpc-io_client_stress_test::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-task_tasks_rpc-io_client_stress_test-Debug-54d9a4fa832abd8a15aa.json",
+					"name" : "task_tasks_rpc-io_client_stress_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "task_tasks_rpc-io_client_test::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-task_tasks_rpc-io_client_test-Debug-4c386058be36df38c35d.json",
+					"name" : "task_tasks_rpc-io_client_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "task_tasks_rpc-io_coro_queue_test::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-task_tasks_rpc-io_coro_queue_test-Debug-4ebdb8535ecfc6a085ac.json",
+					"name" : "task_tasks_rpc-io_coro_queue_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "task_tasks_rpc-io_ephemeral_transport_test::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-task_tasks_rpc-io_ephemeral_transport_test-Debug-9015eaaf302a29529232.json",
+					"name" : "task_tasks_rpc-io_ephemeral_transport_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "task_tasks_rpc-io_event_watcher_test::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-task_tasks_rpc-io_event_watcher_test-Debug-ad196c4fdd0bcf60c5de.json",
+					"name" : "task_tasks_rpc-io_event_watcher_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "task_tasks_rpc-io_server_test::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-task_tasks_rpc-io_server_test-Debug-6723f0cbc7b7f257ea7e.json",
+					"name" : "task_tasks_rpc-io_server_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "task_tasks_rpc-io_timer_test::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-task_tasks_rpc-io_timer_test-Debug-ca2bfbb866cb2030f0fa.json",
+					"name" : "task_tasks_rpc-io_timer_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 15,
+					"id" : "task_tasks_thread-pool_thread_pool_tests::@3b3ea6ca04da352df0b6",
+					"jsonFile" : "target-task_tasks_thread-pool_thread_pool_tests-Debug-c86622c6ae901383c010.json",
+					"name" : "task_tasks_thread-pool_thread_pool_tests",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 14,
+					"id" : "task_tasks_tutorial_flux_capacitor_test::@20e14e036ac31402e08d",
+					"jsonFile" : "target-task_tasks_tutorial_flux_capacitor_test-Debug-2596c1643dbaa9e13791.json",
+					"name" : "task_tasks_tutorial_flux_capacitor_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "thread_pool::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-thread_pool-Debug-0c2af2c32552f8818913.json",
+					"name" : "thread_pool",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "timer::@75768a65d2d6e0f2b377",
+					"jsonFile" : "target-timer-Debug-0b999b597001d1548727.json",
+					"name" : "timer",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/ubuntu/workspace/cmake-build-debug-coverage",
+		"source" : "/home/ubuntu/workspace"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}

@@ -1,0 +1,89 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"third-party/folly/folly/debugging/exception_tracer/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 51,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 61,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "include/folly/debugging/exception_tracer",
+			"paths" : 
+			[
+				"third-party/folly/folly/debugging/exception_tracer/ExceptionAbi.h",
+				"third-party/folly/folly/debugging/exception_tracer/ExceptionCounterLib.h",
+				"third-party/folly/folly/debugging/exception_tracer/ExceptionTracer.h",
+				"third-party/folly/folly/debugging/exception_tracer/ExceptionTracerLib.h",
+				"third-party/folly/folly/debugging/exception_tracer/StackTrace.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"third-party/folly/folly/debugging/exception_tracer/libfolly_exception_tracer_base.a"
+			],
+			"targetId" : "folly_exception_tracer_base::@6c55624fe8a5182cf12a",
+			"targetIndex" : 9,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"third-party/folly/folly/debugging/exception_tracer/libfolly_exception_tracer.a"
+			],
+			"targetId" : "folly_exception_tracer::@6c55624fe8a5182cf12a",
+			"targetIndex" : 8,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"third-party/folly/folly/debugging/exception_tracer/libfolly_exception_counter.a"
+			],
+			"targetId" : "folly_exception_counter::@6c55624fe8a5182cf12a",
+			"targetIndex" : 7,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "third-party/folly/folly/debugging/exception_tracer",
+		"source" : "third-party/folly/folly/debugging/exception_tracer"
+	}
+}

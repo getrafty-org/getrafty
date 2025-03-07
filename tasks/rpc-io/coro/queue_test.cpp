@@ -74,8 +74,8 @@ CO_TEST_F(UnboundedBlockingQueueTest, MixedContextPutAndTake) {
 }
 
 CO_TEST_F(UnboundedBlockingQueueTest, StressTest) {
-  constexpr uint32_t kProducers = 10;
-  constexpr uint32_t kConsumers = 10;
+  constexpr uint32_t kProducers = 100;
+  constexpr uint32_t kConsumers = 100;
   constexpr uint32_t kItemsPerProducer = 1000;
   constexpr uint32_t kTotalItems = kProducers * kItemsPerProducer;
   constexpr uint32_t kItemsPerConsumer = kTotalItems / kConsumers;
@@ -135,6 +135,24 @@ CO_TEST_F(UnboundedBlockingQueueTest, StressTest) {
 
   co_return;
 }
+
+CO_TEST_F(UnboundedBlockingQueueTest, CancellationDoesNotRemoveWaiter) {
+  UnboundedBlockingQueue<int> queue;
+
+  const auto timed_result = co_await co_awaitTry(timeout(queue.take(), 10ms));
+  EXPECT_FALSE(timed_result.hasValue()) << "Expected initial take() to time out";
+
+  queue.put(42);
+
+   auto new_result = co_await co_awaitTry(timeout(queue.take(), 100ms));
+
+  EXPECT_TRUE(new_result.hasValue());
+  if (new_result.hasValue()) {
+    EXPECT_EQ(*new_result, 42);
+  }
+  co_return;
+}
+
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

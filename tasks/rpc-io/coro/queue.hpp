@@ -1,63 +1,129 @@
 #pragma once
 
-#include <deque>
-#include <mutex>
+#include <folly/CancellationToken.h>
+#include <folly/ScopeGuard.h>
+#include <folly/experimental/coro/AsyncGenerator.h>
 #include <folly/experimental/coro/Baton.h>
 #include <folly/experimental/coro/Task.h>
+#include <deque>
+#include <mutex>
+
+#include "folly/coro/Promise.h"
 
 namespace getrafty::wheels::concurrent::coro {
 
+/**
+ * UnboundedBlockingQueue with coroutine-friendly take operation.
+ */
 template <typename T>
 class UnboundedBlockingQueue {
-public:
+ public:
   UnboundedBlockingQueue() = default;
   UnboundedBlockingQueue(const UnboundedBlockingQueue&) = delete;
   UnboundedBlockingQueue& operator=(const UnboundedBlockingQueue&) = delete;
   UnboundedBlockingQueue(UnboundedBlockingQueue&&) = delete;
   ~UnboundedBlockingQueue() = default;
 
-  // Can be called from either coroutine or non-coroutine context.
-  void put(T v) {
+  void put(T value) {
     std::unique_lock lock(mutex_);
-    if (!waiters_.empty()) {
-      // If a coroutine is waiting, resume it with the new value.
-      Waiter* waiter = waiters_.front();
-      waiters_.pop_front();
-      waiter->value = std::move(v);
-      waiter->baton.post();
+    if (waiters_head_) {
+      auto node = waiters_head_;
+      removeWaiter(node);
+
+      node->has_value = true;
+      node->value = std::move(value);
+      node->baton.post();
     } else {
-      q_.emplace_back(std::move(v));
+      queue_.push_back(std::move(value));
     }
   }
 
-  // Must be called from a coroutine context.
-  // This function is co_await‑able and will suspend until a value is available.
   folly::coro::Task<T> take() {
-    Waiter waiter;
     {
       std::unique_lock lock(mutex_);
-      if (!q_.empty()) {
-        T value = std::move(q_.front());
-        q_.pop_front();
-        co_return std::move(value);
+      if (!queue_.empty()) {
+        T front = std::move(queue_.front());
+        queue_.pop_front();
+        co_return front;
       }
-      // No available item, so add this waiter.
-      waiters_.push_back(&waiter);
     }
-    co_await waiter.baton; // suspend until put() posts the baton
-    co_return std::move(waiter.value);
+
+    Node node;
+    {
+      std::unique_lock lock(mutex_);
+      if (!queue_.empty()) {
+        T front = std::move(queue_.front());
+        queue_.pop_front();
+        co_return front;
+      }
+      pushBackWaiter(&node);
+    }
+
+    // Handle cancellation via a callback that removes us from waiters if invoked
+    auto ct = co_await folly::coro::co_current_cancellation_token;
+    folly::CancellationCallback cancel_cb(
+        ct,
+        [this, &node]() noexcept {
+          std::unique_lock lock(mutex_);
+          if (!node.canceled && (node.prev || node.next || waiters_head_ == &node)) {
+            removeWaiter(&node);
+            node.canceled = true;
+            node.baton.post();
+          }
+        });
+
+    co_await node.baton;
+
+    if (node.canceled) {
+      throw folly::OperationCancelled();
+    }
+
+    co_return std::move(node.value);
   }
 
-private:
-  // A waiter for a suspended take.
-  struct Waiter {
+ private:
+  struct Node {
+    Node* prev{nullptr};
+    Node* next{nullptr};
     folly::coro::Baton baton;
-    T value; // will be assigned when put() is called
+    bool canceled{false};
+    bool has_value{false};
+    T value;
   };
 
-  std::deque<T> q_;
+  void pushBackWaiter(Node* node) {
+    node->prev = waiters_tail_;
+    node->next = nullptr;
+    if (waiters_tail_) {
+      waiters_tail_->next = node;
+    } else {
+      waiters_head_ = node;
+    }
+    waiters_tail_ = node;
+  }
+
+  void removeWaiter(Node* node) {
+    Node* p = node->prev;
+    Node* n = node->next;
+    if (p) {
+      p->next = n;
+    } else {
+      waiters_head_ = n;
+    }
+    if (n) {
+      n->prev = p;
+    } else {
+      waiters_tail_ = p;
+    }
+    node->prev = nullptr;
+    node->next = nullptr;
+  }
+
   std::mutex mutex_;
-  std::deque<Waiter*> waiters_;
+  std::deque<T> queue_;
+
+  Node* waiters_head_{nullptr};
+  Node* waiters_tail_{nullptr};
 };
 
-}  // namespace getrafty::wheels::concurrent::coro
+} // namespace getrafty::wheels::concurrent::coro
