@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <thread_pool.hpp>
 
 #include <cassert>

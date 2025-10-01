@@ -3,7 +3,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
 # --------------------------------------------------------------------
 
 # Libraries with CMake targets
-set(TARGET_LIBS "fmt::fmt;function2;folly;GTest::gtest_main;GTest::gmock_main")
+set(TARGET_LIBS "fmt::fmt;function2;GTest::gtest_main;GTest::gmock_main")
 
 # System libraries
 set(SYSTEM_LIBS "pthread")
@@ -28,7 +28,6 @@ function(add_task_executable BINARY_NAME)
   add_dependencies(${BINARY_NAME}
     fmt::fmt
     function2
-    folly
     GTest::gtest_main
     GTest::gmock_main
   )

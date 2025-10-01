@@ -1,0 +1,41 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug CMake Target (LLDB-dap)",
+            "type": "lldb-dap",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "cwd": "${command:cmake.launchTargetDirectory}",
+            "env": {
+                "UBSAN_OPTIONS": "print_stacktrace=1"
+            },
+            "stopOnEntry": false,
+            "console": "integratedTerminal",
+            "preLaunchTask": "cmake-build-active-target",
+        },
+        {
+            "name": "Launch Fragments Extension",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}/fragments/dist/vscode-extension"],
+            "outFiles": ["${workspaceFolder}/fragments/dist/vscode-extension/**/*.js"],
+            "preLaunchTask": "build-fragments-extension"
+        },
+        {
+            "name": "Debug Extension Development",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}/fragments/dist/vscode-extension"],
+            "outFiles": ["${workspaceFolder}/fragments/dist/vscode-extension/**/*.js"],
+            "preLaunchTask": "watch-fragments-extension",
+            "env": {
+                "NODE_ENV": "development"
+            }
+        }
+    ]
+}

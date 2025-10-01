@@ -1,7 +1,6 @@
 #include <thread_pool.hpp>
 #include <gtest/gtest.h>
 #include <chrono>
-#include <latch>
 #include <thread>
 #include <wait_group.hpp>
 

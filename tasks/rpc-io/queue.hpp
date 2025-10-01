@@ -21,25 +21,25 @@ class UnboundedBlockingQueue {
   ~UnboundedBlockingQueue() = default;
 
   void put(T v) {
-    // ==== YOUR CODE: @b27057d1 ====
-    std::unique_lock lock(mutex_);
-    q_.emplace_back(std::move(v));
+    // ==== YOUR CODE: @b270 ====
+    {
+      std::unique_lock lock(mutex_);
+      q_.emplace_back(std::move(v));
+    }
     // ==== END YOUR CODE ====
   }
 
   T take() {
-    // ==== YOUR CODE: @48ddb17c ====
+    // ==== YOUR CODE: @48dd ====
     while (true) {
       std::unique_lock lock(mutex_);
-      if (q_.empty()) {
-        // backoff?
-        continue;
+      if (!q_.empty()) {
+        auto v = std::move(q_.front());
+        q_.pop_front();
+        return v;
       }
-      auto v = std::move(q_.front());
-      q_.pop_front();
-
-      return std::move(v);
     }
+
     // ==== END YOUR CODE ====
   }
 

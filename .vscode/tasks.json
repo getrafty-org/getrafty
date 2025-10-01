@@ -1,0 +1,86 @@
+{
+  "version": "2.0.0",
+  "inputs": [
+    {
+      "id": "cmakeTargetName",
+      "type": "promptString",
+      "description": "CMake target to build (use 'all' for the default build)",
+      "default": "all"
+    }
+  ],
+  "tasks": [
+    {
+      "label": "cmake-configure-debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-S",
+        "${workspaceFolder}",
+        "-B",
+        "${workspaceFolder}/build",
+        "-DCMAKE_BUILD_TYPE=Debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "cmake-build-target",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build",
+        "--target",
+        "${input:cmakeTargetName}"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "cmake-build-active-target",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build",
+        "--target",
+        "${command:cmake.launchTargetName}"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "build-fragments-extension",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "build:extension"],
+      "options": {
+        "cwd": "${workspaceFolder}/fragments"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "watch-fragments-extension",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "watch"],
+      "options": {
+        "cwd": "${workspaceFolder}/fragments"
+      },
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": ["$tsc-watch"]
+    }
+  ]
+}

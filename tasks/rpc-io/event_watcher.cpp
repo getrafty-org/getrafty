@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <cassert>
 #include <cerrno>
 
 #include <fmt/format.h>
@@ -102,74 +103,10 @@ void EventWatcher::waitLoop() {
 
     const int n_fd = epoll_impl_(epoll_fd_, events, kMaxEvents, /*timeout=*/-1);  // NOLINT
 
-    // ==== YOUR CODE: @59acb300 ====
-    if (n_fd == -1) {
-      if (errno == EINTR) {
-        continue;
-      }
+    // ==== YOUR CODE: @59ac ====
 
-      std::cerr << "EventWatcher::waitLoop failed with unrecoverable error, errno: "
-                << strerror(errno);
-      running_.store(false, std::memory_order_release);
-      return;
-    }
-
-    readable_fd_.clear();
-    readable_fd_.clear();
-    for (int n = 0; n < n_fd; ++n) {
-      if (int fd = events[n].data.fd; fd == early_wakeup_pipe_fd_[0]) {
-        // Drain the pipe fully to avoid repeated triggers
-        while (true) {
-          char buffer[128];
-          if (const ssize_t bytes = read(fd, buffer, sizeof(buffer)); bytes <= 0) {
-            break;
-          }
-        }
-      } else {
-        if (events[n].events & EPOLLIN) {
-          readable_fd_.push_back(fd);
-        }
-        if (events[n].events & EPOLLOUT) {
-          writable_fd_.push_back(fd);
-        }
-      }
-    }
-
-    for (int fd : readable_fd_) {
-      IWatchCallbackPtr cob = nullptr;
-      {
-        std::shared_lock lock(mutex_);
-        if (auto it = callbacks_.find({fd, CB_RDONLY}); it != callbacks_.end()) {
-          cob = it->second;
-        }
-      }
-
-      try {
-        if (cob) {
-          cob->onReadReady(fd);
-        }
-      } catch ([[maybe_unused]] std::exception& ex) {
-        // TODO: handle
-      }
-    }
-
-    for (int fd : writable_fd_) {
-      IWatchCallbackPtr cob = nullptr;
-      {
-        std::shared_lock lock(mutex_);
-        if (auto it = callbacks_.find({fd, CB_WRONLY}); it != callbacks_.end()) {
-          cob = it->second;
-        }
-      }
-
-      try {
-        if (cob) {
-          cob->onWriteReady(fd);
-        }
-      } catch ([[maybe_unused]] std::exception& ex) {
-        // TODO: handle
-      }
-    }
+    // TODO: Impl
+    
     // ==== END YOUR CODE ====
   }
 }

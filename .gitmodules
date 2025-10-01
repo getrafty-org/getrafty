@@ -7,3 +7,6 @@
 [submodule "third-party/folly"]
 	path = third-party/folly
 	url = https://github.com/facebook/folly.git
+[submodule "fragments"]
+	path = fragments
+	url = https://github.com/getrafty-org/fragments.git

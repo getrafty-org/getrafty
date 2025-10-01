@@ -13,4 +13,10 @@ add_task_test(
   thread_pool.cpp
 )
 
+add_task_test(
+  queue_tests
+  wait_group.hpp
+  queue_test.cpp
+)
+
 end_task()
