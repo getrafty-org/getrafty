@@ -1,0 +1,165 @@
+#!/bin/sh
+set -e
+
+CONTAINER_NAME="getrafty"
+CONTAINER_USER="ubuntu"
+CONTAINER_BIND_DIR="$(pwd)"
+CONTAINER_SSH_PORT=3333
+CONTAINER_SITE_PORT=3000
+
+error_exit() {
+    printf "Error: %s\n" "$1" >&2
+    exit 1
+}
+
+check_docker_is_installed() {
+    if ! command -v docker >/dev/null 2>&1; then
+        error_exit "Docker is not installed. Please install Docker first."
+    fi
+}
+
+check_container_exists() {
+    docker ps -a --filter "name=^${CONTAINER_NAME}$" --format "{{.ID}}" 2>/dev/null
+}
+
+check_container_is_running() {
+    docker ps --filter "name=^${CONTAINER_NAME}$" --format "{{.ID}}" 2>/dev/null
+}
+
+remove_existing_container() {
+    container_id=$(check_container_exists)
+    if [ -n "$container_id" ]; then
+        printf "Removing existing container %s...\n" "$container_id"
+        docker rm -f "$container_id" >/dev/null
+    fi
+}
+
+restart_existing_container() {
+    container_id=$(check_container_exists)
+    if [ -n "$container_id" ]; then
+        printf "Found existing container %s. Restarting it...\n" "$container_id"
+        docker start "$container_id" >/dev/null
+        return 0
+    fi
+    return 1
+}
+
+confirm() {
+    printf "%s [y/N] " "$1"
+    read -r response
+    case "$response" in
+        [yY][eE][sS]|[yY]) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+cmd_boot() {
+    build_flag=0
+    if [ "$1" = "--build" ]; then
+        build_flag=1
+    fi
+
+    check_docker_is_installed
+
+    if [ $build_flag -eq 1 ]; then
+        if [ -n "$(check_container_is_running)" ]; then
+            if confirm "The container is running. Do you want to stop and rebuild it?"; then
+                remove_existing_container
+            else
+                printf "Exiting without rebuilding.\n"
+                return 0
+            fi
+        else
+            remove_existing_container
+        fi
+
+        image_id=$(docker images "$CONTAINER_NAME" -q)
+        if [ -n "$image_id" ]; then
+            docker rmi "$image_id" >/dev/null
+        fi
+        docker build -t "$CONTAINER_NAME" .
+    else
+        if [ -n "$(check_container_is_running)" ]; then
+            printf "Container is up. Connect by running: \`tasklet attach\`.\n"
+            return 0
+        fi
+
+        if restart_existing_container; then
+            printf "Container restarted successfully. Connect by running: \`tasklet attach\`.\n"
+            return 0
+        fi
+    fi
+
+    docker run -d \
+        --name "$CONTAINER_NAME" \
+        --cap-add SYS_PTRACE \
+        --cap-add SYS_ADMIN \
+        --privileged \
+        --device /dev/fuse:/dev/fuse \
+        -v "${CONTAINER_BIND_DIR}:/home/${CONTAINER_USER}/workspace/" \
+        -p "${CONTAINER_SSH_PORT}:22" \
+        -p "${CONTAINER_SITE_PORT}:${CONTAINER_SITE_PORT}" \
+        "$CONTAINER_NAME" >/dev/null
+
+    docker exec "$CONTAINER_NAME" /bin/sh -c "mkdir -p /home/${CONTAINER_USER}/.tasklet"
+    docker cp .bashrc "${CONTAINER_NAME}:/home/${CONTAINER_USER}/.tasklet/.bashrc"
+    docker exec "$CONTAINER_NAME" /bin/sh -c "cat /home/${CONTAINER_USER}/.tasklet/.bashrc >> /home/${CONTAINER_USER}/.bashrc"
+
+    printf "Connect by running: \`tasklet attach\`.\n"
+}
+
+cmd_attach() {
+    root_flag=0
+    if [ "$1" = "--root" ]; then
+        root_flag=1
+    fi
+
+    container_id=$(check_container_is_running)
+    if [ -z "$container_id" ]; then
+        error_exit "DevVM is not running."
+    fi
+
+    if [ $root_flag -eq 1 ]; then
+        docker exec -it "$container_id" /bin/bash
+    else
+        host_ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+        if [ -z "$host_ip" ]; then
+            host_ip=$(ifconfig 2>/dev/null | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -1)
+        fi
+        ssh "${CONTAINER_USER}@${host_ip}" -p "$CONTAINER_SSH_PORT"
+    fi
+}
+
+usage() {
+    cat <<EOF
+Tasklet
+
+Usage:
+  tasklet boot [--build]    Build and run the development VM
+  tasklet attach [--root]   Attach to the running DevVM
+  tasklet help              Show this help message
+
+Options:
+  --build                   Rebuild the container image
+  --root                    Attach with root access
+EOF
+}
+
+case "${1:-}" in
+    boot)
+        shift
+        cmd_boot "$@"
+        ;;
+    attach)
+        shift
+        cmd_attach "$@"
+        ;;
+    help|--help|-h|"")
+        usage
+        ;;
+    *)
+        printf "Error: Unknown command '%s'\n\n" "$1" >&2
+        usage
+        exit 1
+        ;;
+esac

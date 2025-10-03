@@ -44,7 +44,6 @@ ARG DEPS=" \
     python3-venv \
     libgflags-dev \
     libgoogle-glog-dev \
-    libunwind-dev \
     libfast-float-dev \
 "
 
