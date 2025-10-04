@@ -42,7 +42,4 @@ _cache
 
 .idea
 
-# Solutions
-tasks/solutions
-
-.backlog.txt
+cmake-build*

@@ -6,7 +6,7 @@ namespace getrafty::tutorial {
 
 using Speed = uint32_t;
 
-// https://backtothefuture.fandom.com/wiki/Flux_capacitor
+// https://en.wikipedia.org/wiki/DeLorean_time_machine#Equipment
 class FluxCapacitor {
 public:
     Speed computeTimeBreakBarrierSpeed();

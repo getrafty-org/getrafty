@@ -1,3 +1,3 @@
-function(project_log message)
-    message(STATUS "[${PROJECT_NAME}] ${message}")
+function(status message)
+  message(STATUS "[${PROJECT_NAME}] ${message}")
 endfunction()

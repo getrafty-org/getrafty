@@ -2,19 +2,20 @@
 
 #include <atomic>
 #include <cstdint>
-#include <functional>
+#include "folly/Function.h"
 #include <thread>
 #include <vector>
+#include <optional>
 #include "queue.hpp"
 
 namespace getrafty::wheels::concurrent {
 
-using Task = std::function<void()>;
+using Task = folly::Function<void()>;
 
 // Fixed-size pool of worker threads
 class ThreadPool {
  public:
-  explicit ThreadPool(const size_t threads);
+  explicit ThreadPool(size_t threads);
 
   ~ThreadPool();
 
@@ -42,4 +43,5 @@ class ThreadPool {
   UnboundedBlockingQueue<std::optional<Task>> worker_queue_{};
   std::vector<std::thread> worker_threads_;
 };
+
 }  // namespace getrafty::wheels::concurrent

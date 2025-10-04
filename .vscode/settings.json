@@ -1,0 +1,14 @@
+{
+  "cmake.debugger": "lldb-dap",
+  "cmake.debugConfig": {
+    "type": "lldb-dap",
+    "request": "launch",
+    "console": "integratedTerminal",
+    "env": {
+      "UBSAN_OPTIONS": "print_stacktrace=1"
+    },
+    "stopOnEntry": false,
+    "debuggerPath": "/usr/lib/llvm-19/bin/lldb-dap"
+  },
+  "cmake.generator": "Unix Makefiles"
+}

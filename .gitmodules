@@ -1,7 +1,12 @@
 [submodule "getrafty-private"]
 	path = getrafty-private
 	url = git@github.com:sidosera/getrafty-private.git
-
 [submodule "site"]
 	path = site
 	url = git@github.com:getrafty-org/site.git
+[submodule "third-party/folly"]
+	path = third-party/folly
+	url = https://github.com/facebook/folly.git
+[submodule "fragments"]
+	path = fragments
+	url = https://github.com/getrafty-org/fragments.git
