@@ -1,289 +1,123 @@
 begin_task()
 
-# thread_pool
 add_library(
-  thread_pool
-  thread_pool.hpp
-  thread_pool.cpp
-)
-
-target_link_libraries(
-  thread_pool
-  PRIVATE
-  folly
-)
-#
-
-# event_watcher
-add_library(
-  event_watcher
-  event_watcher.cpp
-  event_watcher.hpp
-)
-
-target_link_libraries(
-  event_watcher
-  PRIVATE
-  fmt::fmt
-  thread_pool
-  folly
-)
-
-add_task_test(
-  event_watcher_test
-  event_watcher_test.cpp
-)
-
-target_link_libraries(
-  task_tasks_rpc-io_event_watcher_test
-  PRIVATE
-  event_watcher
-  gtest
-  folly
-  gmock
-)
-#
-
-# timer
-add_library(
-  timer
-  timer.hpp
-  timer.cpp
-)
-
-add_task_test(
-  timer_test
-  timer_test.cpp
-)
-
-target_link_libraries(
-  timer
-  PRIVATE
-  folly
-  thread_pool
-)
-
-target_link_libraries(
-  task_tasks_rpc-io_timer_test
-  PRIVATE
-  timer
-  gtest
-  folly
-  gmock
-  event_watcher
-)
-#
-
-set_task_sources(
-  client.hpp
-  client.cpp
-  event_watcher.cpp
-  event_watcher.hpp
-  logging.cpp
-  logging.hpp
+  task_rpc_io_thread_pool
   thread_pool.hpp
   thread_pool.cpp
   queue.hpp
+)
+
+target_link_libraries(
+  task_rpc_io_thread_pool
+  PRIVATE
+  fmt::fmt
+)
+
+add_library(
+  task_rpc_io_event_watcher
+  event_watcher.hpp
+  event_watcher.cpp
+)
+
+target_link_libraries(
+  task_rpc_io_event_watcher
+  PRIVATE
+  fmt::fmt
+)
+
+add_library(
+  task_rpc_io_socket
+  socket.hpp
+)
+
+set_target_properties(
+  task_rpc_io_socket
+  PROPERTIES
+  LINKER_LANGUAGE CXX
+)
+
+add_library(
+  task_rpc_io_tcp_socket
+  tcp_socket.hpp
+)
+
+set_target_properties(
+  task_rpc_io_tcp_socket
+  PROPERTIES
+  LINKER_LANGUAGE CXX
+)
+
+target_link_libraries(
+  task_rpc_io_tcp_socket
+  PRIVATE
+  task_rpc_io_socket
+  task_rpc_io_event_watcher
+)
+
+add_library(
+  task_rpc_io_transport
+  transport.hpp
+)
+
+set_target_properties(
+  task_rpc_io_transport
+  PROPERTIES
+  LINKER_LANGUAGE CXX
+)
+
+target_link_libraries(
+  task_rpc_io_transport
+  PRIVATE
+  task_rpc_io_socket
+)
+
+add_library(
+  task_rpc_io_channel
   channel.hpp
-  clock.hpp
 )
 
-#add_task_test(
-#  event_watcher_test
-#  event_watcher_test.cpp
-#  event_watcher.cpp
-#  event_watcher.hpp
-#  logging.cpp
-#  logging.hpp
-#  thread_pool.hpp
-#  thread_pool.cpp
-#  queue.hpp
-#)
+set_target_properties(
+  task_rpc_io_channel
+  PROPERTIES
+  LINKER_LANGUAGE CXX
+)
 
-# channel
+target_link_libraries(
+  task_rpc_io_channel
+  PRIVATE
+  task_rpc_io_transport
+  task_rpc_io_thread_pool
+)
 
 add_library(
-  ephemeral_transport
-  ephemeral_transport.hpp
-  ephemeral_transport.cpp
-)
-
-add_task_test(
-  ephemeral_transport_test
-  ephemeral_transport_test.cpp
-)
-
-target_link_libraries(
-  ephemeral_transport
-  PRIVATE
-  folly
-  timer
-  thread_pool
-  event_watcher
-)
-
-target_compile_options(
-  ephemeral_transport
-  PRIVATE
-  -Wno-error
-)
-
-target_link_libraries(
-  task_tasks_rpc-io_ephemeral_transport_test
-  PRIVATE
-  folly
-  timer
-  thread_pool
-  event_watcher
-  ephemeral_transport
-)
-
-target_compile_options(
-  task_tasks_rpc-io_ephemeral_transport_test
-  PRIVATE
-  -Wno-error
-)
-
-#
-
-# client
-add_library(
-  client
-  client.hpp
-  client.cpp
-)
-
-add_task_test(
-  client_test
-  client_test.cpp
-  client.hpp
-  client.cpp
-)
-
-target_link_libraries(
-  client
-  PRIVATE
-  folly
-  timer
-  thread_pool
-  event_watcher
-  ephemeral_transport
-)
-
-target_compile_options(
-  client
-  PRIVATE
-  -Wno-error
-)
-
-add_task_test(
-  client_stress_test
-  client_stress_test.cpp
-  client.hpp
-  client.cpp
-)
-
-target_link_libraries(
-  task_tasks_rpc-io_client_stress_test
-  PRIVATE
-  folly
-  timer
-  thread_pool
-  event_watcher
-)
-
-target_compile_options(
-  task_tasks_rpc-io_client_test
-  PRIVATE
-  -Wno-error
-)
-
-target_compile_options(
-  task_tasks_rpc-io_client_stress_test
-  PRIVATE
-  -Wno-error
-)
-#
-
-
-# server
-add_library(
-  server
+  task_rpc_io_server
   server.hpp
-  server.cpp
+)
+
+set_target_properties(
+  task_rpc_io_server
+  PROPERTIES
+  LINKER_LANGUAGE CXX
 )
 
 target_link_libraries(
-  server
+  task_rpc_io_server
   PRIVATE
-  folly
-  timer
-  thread_pool
-  event_watcher
-  client
-)
-
-target_compile_options(
-  server
-  PRIVATE
-  -Wno-error
+  task_rpc_io_socket
+  task_rpc_io_thread_pool
 )
 
 add_task_test(
-  server_test
-  server_test.cpp
-  server.hpp
-  server.cpp
+  tcp_socket_test
+  tcp_socket_test.cpp
 )
 
 target_link_libraries(
-  task_tasks_rpc-io_server_test
-  PRIVATE
-  folly
-  timer
-  thread_pool
-  event_watcher
-  client
-)
-
-target_compile_options(
-  task_tasks_rpc-io_server_test
-  PRIVATE
-  -Wno-error
-)
-#
-
-# coro::queue
-add_library(
-  coro_queue
-  coro/queue.hpp
-)
-
-add_task_test(
-  coro_queue_test
-  coro/queue_test.cpp
-)
-
-target_link_libraries(
-  coro_queue
-  PRIVATE
-  folly
-)
-
-target_link_libraries(
-  task_tasks_rpc-io_coro_queue_test
+  task_tasks_rpc-io_tcp_socket_test
   PRIVATE
   gtest
-  folly
-  gmock
+  task_rpc_io_tcp_socket
+  task_rpc_io_event_watcher
 )
-
-target_compile_options(
-  task_tasks_rpc-io_coro_queue_test
-  PRIVATE
-  -Wno-error
-)
-
-#
 
 end_task()

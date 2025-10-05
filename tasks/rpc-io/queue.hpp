@@ -1,5 +1,6 @@
 #pragma once
 
+#include <condition_variable>
 #include <deque>
 #include <mutex>
 
@@ -26,25 +27,25 @@ class UnboundedBlockingQueue {
       std::unique_lock lock(mutex_);
       q_.emplace_back(std::move(v));
     }
+    cv_.notify_one();
     // ==== END YOUR CODE ====
   }
 
   T take() {
     // ==== YOUR CODE: @48dd ====
-    while (true) {
-      std::unique_lock lock(mutex_);
-      if (!q_.empty()) {
-        auto v = std::move(q_.front());
-        q_.pop_front();
-        return v;
-      }
-    }
+    std::unique_lock lock(mutex_);
+    cv_.wait(lock, [this] { return !q_.empty(); });
 
+    auto v = std::move(q_.front());
+    q_.pop_front();
+
+    return v;
     // ==== END YOUR CODE ====
   }
 
  private:
   std::deque<T> q_;
   std::mutex mutex_;
+  [[maybe_unused]] std::condition_variable cv_;
 };
 }  // namespace getrafty::wheels::concurrent

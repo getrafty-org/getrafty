@@ -2,15 +2,16 @@
 
 #include <atomic>
 #include <cstdint>
-#include "folly/Function.h"
 #include <thread>
 #include <vector>
 #include <optional>
+#include <functional>
+
 #include "queue.hpp"
 
 namespace getrafty::wheels::concurrent {
 
-using Task = folly::Function<void()>;
+using Task = std::move_only_function<void()>;
 
 // Fixed-size pool of worker threads
 class ThreadPool {
@@ -39,8 +40,8 @@ class ThreadPool {
   enum State : uint8_t { NONE, RUNNING, STOPPING, STOPPED };
 
   std::atomic<State> state_;
-  uint32_t worker_threads_count_;
-  UnboundedBlockingQueue<std::optional<Task>> worker_queue_{};
+  [[maybe_unused]] uint32_t worker_threads_count_;
+  UnboundedBlockingQueue<std::optional<Task>> worker_queue_;
   std::vector<std::thread> worker_threads_;
 };
 

@@ -1,44 +1,28 @@
 #pragma once
 
-#include "folly/coro/Task.h"
+#include "socket.hpp"
+#include <functional>
+#include <memory>
 
 namespace getrafty::rpc::io {
 
-using Message = std::string;
-using Address = std::string;
-
-class IClientSocket {
+class Transport {
  public:
-  virtual ~IClientSocket() = default;
+  explicit Transport(std::unique_ptr<ISocket> socket);
+  ~Transport();
 
-  virtual folly::coro::Task<> send(const Message& message) = 0;
+  Transport(const Transport&) = delete;
+  Transport& operator=(const Transport&) = delete;
 
-  virtual folly::coro::Task<Message> recv() = 0;
+  void asyncRead(std::move_only_function<void(Status, Buffer)> callback);
 
-  virtual void connect() = 0;
+  void asyncWrite(Buffer message, std::move_only_function<void(Status)> callback);
 
-  virtual void disconnect() = 0;
+  void close();
 
-  virtual bool isConnected() = 0;
-
-  virtual Address getAddress() = 0;
-
-  virtual Address getPeerAddress() = 0;
-};
-
-using IClientSocketPtr = std::shared_ptr<IClientSocket>;
-
-class IServerSocket {
- public:
-  virtual ~IServerSocket() = default;
-
-  virtual folly::coro::Task<IClientSocketPtr> accept() = 0;
-
-  virtual bool start() = 0;
-
-  virtual bool stop() = 0;
-
-  virtual Address getAddress() = 0;
+ private:
+  std::unique_ptr<ISocket> socket_;
+  Buffer read_buffer_;
 };
 
 }  // namespace getrafty::rpc::io

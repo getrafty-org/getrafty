@@ -1,113 +1,322 @@
+#include "event_watcher.hpp"
+
 #include <fcntl.h>
+#include <sys/epoll.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <cassert>
-#include <cerrno>
 
-#include <fmt/format.h>
-#include <sys/epoll.h>
-#include <event_watcher.hpp>
+#include <array>
+#include <atomic>
+#include <cerrno>
+#include <cstring>
 #include <exception>
 #include <iostream>
+#include <mutex>
+#include <shared_mutex>
+#include <stdexcept>
+#include <system_error>
+#include <utility>
 
-constexpr int kMaxEvents = 128;
+#include <fmt/format.h>
 
 namespace getrafty::rpc::io {
 
-EventWatcher& EventWatcher::getInstance() {
-  static EventWatcher ew;
-  return ew;
+namespace detail {
+
+[[maybe_unused]] constexpr int kMaxEvents = 128;
+
+int createEpollFd() {
+  const int fd = ::epoll_create1(EPOLL_CLOEXEC);
+  if (fd == -1) {
+    throw std::system_error(errno, std::generic_category(),
+                            "Failed to create epoll fd");
+  }
+  return fd;
 }
 
+std::pair<int, int> createPipe() {
+  std::array<int, 2> fds{-1, -1};
+  if (::pipe(fds.data()) != 0) {
+    throw std::system_error(errno, std::generic_category(),
+                            "Failed to create pipe");
+  }
+
+  const int flags = ::fcntl(fds[0], F_GETFL, 0);
+  if (flags == -1) {
+    ::close(fds[0]);
+    ::close(fds[1]);
+    throw std::system_error(errno, std::generic_category(),
+                            "Failed to get pipe flags");
+  }
+
+  if (::fcntl(fds[0], F_SETFL, flags | O_NONBLOCK) == -1) {
+    ::close(fds[0]);
+    ::close(fds[1]);
+    throw std::system_error(errno, std::generic_category(),
+                            "Failed to set pipe non-blocking");
+  }
+
+  return {fds[0], fds[1]};
+}
+
+FileDescriptor::~FileDescriptor() {
+  if (fd_ != -1) {
+    ::close(fd_);
+  }
+}
+
+FileDescriptor::FileDescriptor(FileDescriptor&& other) noexcept
+    : fd_(other.fd_) {
+  other.fd_ = -1;
+}
+
+FileDescriptor& FileDescriptor::operator=(FileDescriptor&& other) noexcept {
+  if (this != &other) {
+    if (fd_ != -1) {
+      ::close(fd_);
+    }
+    fd_ = other.fd_;
+    other.fd_ = -1;
+  }
+  return *this;
+}
+
+int FileDescriptor::release() noexcept {
+  const int fd = fd_;
+  fd_ = -1;
+  return fd;
+}
+
+Pipe::Pipe() {
+  auto [read_fd, write_fd] = createPipe();
+  read_fd_ = FileDescriptor(read_fd);
+  write_fd_ = FileDescriptor(write_fd);
+}
+
+}  // namespace detail
+
 EventWatcher::EventWatcher(EpollWaitFunc epoll_impl)
-    : epoll_fd_(epoll_create1(0)), epoll_impl_(std::move(epoll_impl)) {
-
-  assert(epoll_fd_ != -1);
-  assert(pipe(early_wakeup_pipe_fd_) == 0);
-  fcntl(early_wakeup_pipe_fd_[0], F_SETFL, O_NONBLOCK);
-
+    : epoll_fd_(detail::createEpollFd()),
+      wakeup_pipe_(detail::Pipe{}),
+      epoll_impl_{std::move(epoll_impl)} {
   epoll_event event{};
   event.events = EPOLLIN;
-  event.data.fd = early_wakeup_pipe_fd_[0];
-  epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, early_wakeup_pipe_fd_[0], &event);
+  event.data.fd = wakeup_pipe_.read_fd();
 
+  if (::epoll_ctl(epoll_fd_.get(), EPOLL_CTL_ADD, wakeup_pipe_.read_fd(),
+                  &event) == -1) {
+    throw std::system_error(errno, std::generic_category(),
+                            "Failed to add wakeup pipe to epoll");
+  }
+
+  running_.store(true, std::memory_order_relaxed);
   loop_thread_ = std::make_unique<std::thread>(&EventWatcher::waitLoop, this);
 }
 
 EventWatcher::~EventWatcher() {
-  unwatchAll();
-  running_.store(false, std::memory_order_release);
-  loop_thread_->join();
-  for (const auto fd :
-       {epoll_fd_, early_wakeup_pipe_fd_[0], early_wakeup_pipe_fd_[1]}) {
-    close(fd);
+  if (running_.exchange(false, std::memory_order_relaxed)) {
+    unwatchAll();
+    wakeup();
+
+    if (loop_thread_ && loop_thread_->joinable()) {
+      loop_thread_->join();
+    }
   }
 }
 
-void EventWatcher::signalWakeLoop() const {
-  // Wake up the epoll wait loop if it's blocked
-  constexpr char tmp = 1;
-  assert(write(early_wakeup_pipe_fd_[1], &tmp, sizeof(tmp)) == 1);
+void EventWatcher::wakeup() const {
+  constexpr char signal = 1;
+  ::write(wakeup_pipe_.write_fd(), &signal, sizeof(signal));
+}
+
+void EventWatcher::onWakeup(const int fd) const {
+  std::array<char, 1024> buffer{};
+  while (true) {
+    const auto bytes = ::read(fd, buffer.data(), buffer.size());
+    if (bytes <= 0) {
+      break;
+    }
+  }
 }
 
 void EventWatcher::watch(const int fd, const WatchFlag flag,
-                         IWatchCallback* ch) {
-  std::unique_lock lock(mutex_);
+                         IWatchCallbackPtr callback) {
 
-  if (!running_.load(std::memory_order_acquire)) {
+  if (!running_.load(std::memory_order_relaxed)) {
     throw std::runtime_error("not running");
   }
 
   epoll_event event{};
   event.data.fd = fd;
-  if (flag == CB_RDONLY) {
-    event.events = EPOLLIN;
-  } else if (flag == CB_WRONLY) {
-    event.events = EPOLLOUT;
-  } else {
-    throw std::runtime_error("unknown flag");
+  event.events = 0;
+
+  bool fd_in_epoll = false;
+  {
+    const std::unique_lock lock{mutex_};
+    const auto [_, inserted] =
+        callbacks_.insert_or_assign({fd, flag}, std::move(callback));
+
+    if (!inserted) {
+      wakeup();
+      return;
+    }
+
+    if (flag == RDONLY) {
+      event.events |= EPOLLIN;
+      if (callbacks_.contains({fd, WRONLY})) {
+        fd_in_epoll = true;
+        event.events |= EPOLLOUT;
+      }
+    } else if (flag == WRONLY) {
+      event.events |= EPOLLOUT;
+      if (callbacks_.contains({fd, RDONLY})) {
+        fd_in_epoll = true;
+        event.events |= EPOLLIN;
+      }
+    }
   }
 
-  epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd, &event);
+  const int op = fd_in_epoll ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
+  if (::epoll_ctl(epoll_fd_.get(), op, fd, &event) == -1) {
+    throw std::system_error(errno, std::generic_category(),
+                            fmt::format("failed to {} fd {} to epoll",
+                                        fd_in_epoll ? "modify" : "add", fd));
+  }
 
-  callbacks_[{fd, flag}] = ch;
-
-  signalWakeLoop();
+  wakeup();
 }
 
 void EventWatcher::unwatch(const int fd, const WatchFlag flag) {
-  std::unique_lock lock(mutex_);
+  if (!running_.load(std::memory_order_relaxed)) {
+    return;
+  }
 
-  epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr);
-  callbacks_.erase({fd, flag});
+  epoll_event event{};
+  event.data.fd = fd;
+  event.events = 0;
 
-  signalWakeLoop();
+  bool exists = false;
+  {
+    std::unique_lock lock(mutex_);
+    callbacks_.erase({fd, flag});
+
+    if (flag == RDONLY) {
+      if (callbacks_.contains({fd, WRONLY})) {
+        exists = true;
+        event.events |= EPOLLOUT;
+      }
+    } else if (flag == WRONLY) {
+      if (callbacks_.contains({fd, RDONLY})) {
+        exists = true;
+        event.events |= EPOLLIN;
+      }
+    }
+  }
+
+  const int op = exists ? EPOLL_CTL_MOD : EPOLL_CTL_DEL;
+  if (::epoll_ctl(epoll_fd_.get(), op, fd, &event) == -1 && errno != ENOENT && errno != EBADF) {
+    throw std::system_error(errno, std::generic_category(),
+                            fmt::format("failed to {} fd {} in epoll",
+                                        exists ? "modify" : "remove", fd));
+  }
+
+  wakeup();
 }
 
 void EventWatcher::unwatchAll() {
-  std::unique_lock lock(mutex_);
-  for (const auto& [tag, _] : callbacks_) {
-    // Don't remove the wakeup pipe from epoll
-    if (tag.first != early_wakeup_pipe_fd_[0]) {
-      epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, tag.first, nullptr);
+  if (!running_.load(std::memory_order_relaxed)) {
+    return;
+  }
+
+  {
+    const std::unique_lock lock{mutex_};
+    for (auto it = callbacks_.begin(); it != callbacks_.end();) {
+      const auto [fd, flag] = it->first;
+      if (fd != wakeup_pipe_.read_fd() && fd != wakeup_pipe_.write_fd()) {
+        ::epoll_ctl(epoll_fd_.get(), EPOLL_CTL_DEL, fd, nullptr);
+        it = callbacks_.erase(it);
+      } else {
+        ++it;
+      }
     }
   }
-  callbacks_.clear();
 
-  signalWakeLoop();
+  wakeup();
+}
+
+void EventWatcher::invokeCallback(const int fd, const WatchFlag flag) {
+  // ==== YOUR CODE: @67d9 ====
+  IWatchCallbackPtr callback;
+  {
+    const std::shared_lock lock{mutex_};
+    if (auto it = callbacks_.find({fd, flag}); it != callbacks_.end()) {
+      callback = it->second;
+    }
+  }
+
+  if (callback) {
+    try {
+      callback->run(fd);
+    } catch (std::exception& ex) {
+      std::cerr << fmt::format("callback unhandled err: {}", ex.what());
+    }
+  }
+  // ==== END YOUR CODE ====
 }
 
 void EventWatcher::waitLoop() {
-  while (running_.load(std::memory_order_acquire)) {
-    epoll_event events[kMaxEvents];
+  // ==== YOUR CODE: @1879 ====
+  std::array<epoll_event, detail::kMaxEvents> events;
 
-    const int n_fd = epoll_impl_(epoll_fd_, events, kMaxEvents, /*timeout=*/-1);  // NOLINT
+  std::vector<int> readable_fd;
+  readable_fd.reserve(detail::kMaxEvents);
 
-    // ==== YOUR CODE: @59ac ====
+  std::vector<int> writable_fd;
+  writable_fd.reserve(detail::kMaxEvents);
 
-    // TODO: Impl
-    
-    // ==== END YOUR CODE ====
+  while (running_.load(std::memory_order_relaxed)) {
+    const int num_events =
+        epoll_impl_(epoll_fd_.get(), events.data(), detail::kMaxEvents, -1);
+
+    if (num_events == -1) {
+      if (errno == EINTR) {
+        continue;
+      }
+
+      std::cerr << fmt::format("loop failed with error: {}",
+                               std::strerror(errno));
+      running_.store(false, std::memory_order_relaxed);
+      return;
+    }
+
+    readable_fd.clear();
+    writable_fd.clear();
+
+    for (int i = 0; i < num_events; ++i) {
+      const auto& event = events[i];
+      const int fd = event.data.fd;
+
+      if (fd == wakeup_pipe_.read_fd()) {
+        onWakeup(fd);
+      } else {
+        if (event.events & EPOLLIN) {
+          readable_fd.push_back(fd);
+        }
+        if (event.events & EPOLLOUT) {
+          writable_fd.push_back(fd);
+        }
+      }
+    }
+
+    for (const int fd : readable_fd) {
+      invokeCallback(fd, RDONLY);
+    }
+
+    for (const int fd : writable_fd) {
+      invokeCallback(fd, WRONLY);
+    }
   }
+  // ==== END YOUR CODE ====
 }
+
 }  // namespace getrafty::rpc::io
