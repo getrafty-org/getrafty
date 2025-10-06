@@ -130,6 +130,19 @@ cmd_attach() {
     fi
 }
 
+cmd_restart() {
+    check_docker_is_installed
+
+    container_id=$(check_container_exists)
+    if [ -z "$container_id" ]; then
+        error_exit "Container does not exist. Run 'tasklet boot' first."
+    fi
+
+    printf "Restarting container %s...\n" "$container_id"
+    docker restart "$container_id" >/dev/null
+    printf "Container restarted successfully. Connect by running: \`tasklet attach\`.\n"
+}
+
 usage() {
     cat <<EOF
 Tasklet
@@ -137,6 +150,7 @@ Tasklet
 Usage:
   tasklet boot [--build]    Build and run the development VM
   tasklet attach [--root]   Attach to the running DevVM
+  tasklet restart           Restart the container
   tasklet help              Show this help message
 
 Options:
@@ -153,6 +167,10 @@ case "${1:-}" in
     attach)
         shift
         cmd_attach "$@"
+        ;;
+    restart)
+        shift
+        cmd_restart "$@"
         ;;
     help|--help|-h|"")
         usage
