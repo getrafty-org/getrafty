@@ -39,12 +39,7 @@ set_target_properties(
 add_library(
   task_rpc_io_tcp_socket
   tcp_socket.hpp
-)
-
-set_target_properties(
-  task_rpc_io_tcp_socket
-  PROPERTIES
-  LINKER_LANGUAGE CXX
+  tcp_socket.cpp
 )
 
 target_link_libraries(
@@ -114,6 +109,19 @@ add_task_test(
 
 target_link_libraries(
   task_tasks_rpc-io_tcp_socket_test
+  PRIVATE
+  gtest
+  task_rpc_io_tcp_socket
+  task_rpc_io_event_watcher
+)
+
+add_task_test(
+  tcp_socket_stress_test
+  tcp_socket_stress_test.cpp
+)
+
+target_link_libraries(
+  task_tasks_rpc-io_tcp_socket_stress_test
   PRIVATE
   gtest
   task_rpc_io_tcp_socket

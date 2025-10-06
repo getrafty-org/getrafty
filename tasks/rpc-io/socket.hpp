@@ -13,7 +13,10 @@ enum class Status {
   OK,
   CLOSED,
   TIMEOUT,
-  ERROR
+  ERROR,
+  PEER_CLOSED,
+  BROKEN_PIPE,
+  BUSY
 };
 
 class ISocket {
@@ -22,7 +25,7 @@ class ISocket {
 
   virtual void asyncRead(
       size_t max_bytes,
-      std::move_only_function<void(Status, Buffer)> callback) = 0;
+      std::move_only_function<void(Status, Buffer&&)> callback) = 0;
 
   virtual void asyncWrite(
       Buffer data,

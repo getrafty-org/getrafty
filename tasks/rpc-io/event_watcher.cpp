@@ -153,8 +153,8 @@ void EventWatcher::watch(const int fd, const WatchFlag flag,
   bool fd_in_epoll = false;
   {
     const std::unique_lock lock{mutex_};
-    const auto [_, inserted] =
-        callbacks_.insert_or_assign({fd, flag}, std::move(callback));
+
+    auto [it, inserted] = callbacks_.insert_or_assign({fd, flag}, std::move(callback));
 
     if (!inserted) {
       wakeup();
@@ -214,7 +214,7 @@ void EventWatcher::unwatch(const int fd, const WatchFlag flag) {
   }
 
   const int op = exists ? EPOLL_CTL_MOD : EPOLL_CTL_DEL;
-  if (::epoll_ctl(epoll_fd_.get(), op, fd, &event) == -1 && errno != ENOENT && errno != EBADF) {
+  if (::epoll_ctl(epoll_fd_.get(), op, fd, &event) == -1 && errno != ENOENT) {
     throw std::system_error(errno, std::generic_category(),
                             fmt::format("failed to {} fd {} in epoll",
                                         exists ? "modify" : "remove", fd));
@@ -283,8 +283,6 @@ void EventWatcher::waitLoop() {
         continue;
       }
 
-      std::cerr << fmt::format("loop failed with error: {}",
-                               std::strerror(errno));
       running_.store(false, std::memory_order_relaxed);
       return;
     }
