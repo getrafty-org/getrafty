@@ -3,7 +3,7 @@
 #include <cassert>
 #include <iostream>
 
-namespace getrafty::wheels::concurrent {
+namespace getrafty::concurrent {
 
 ThreadPool::ThreadPool(const size_t threads)
     : state_(NONE), worker_threads_count_(threads) {}
@@ -36,4 +36,4 @@ void ThreadPool::stop() {
   throw std::runtime_error(/*TODO:*/"stop()");
   // ==== END YOUR CODE ====
 }
-}  // namespace getrafty::wheels::concurrent
+}  // namespace getrafty::concurrent

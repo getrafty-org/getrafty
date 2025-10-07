@@ -9,10 +9,10 @@
 #include <vector>
 
 using namespace std::chrono_literals;
-using namespace getrafty::wheels::concurrent;
+using namespace getrafty::concurrent;
 
 TEST(QueueTest, JustWorks) {
-  UnboundedBlockingQueue<int> queue;
+  BlockingMPMCQueue<int> queue;
 
   queue.put(42);
 
@@ -20,7 +20,7 @@ TEST(QueueTest, JustWorks) {
 }
 
 TEST(QueueTest, FIFO) {
-  UnboundedBlockingQueue<int> queue;
+  BlockingMPMCQueue<int> queue;
 
   for (int i = 0; i < 10; ++i) {
     queue.put(i);
@@ -32,7 +32,7 @@ TEST(QueueTest, FIFO) {
 }
 
 TEST(QueueTest, BlockingBehavior) {
-  UnboundedBlockingQueue<int> queue;
+  BlockingMPMCQueue<int> queue;
   std::atomic<bool> taken{false};
 
   std::thread consumer([&] {
@@ -51,7 +51,7 @@ TEST(QueueTest, BlockingBehavior) {
 }
 
 TEST(QueueTest, SingleProducerSingleConsumer) {
-  UnboundedBlockingQueue<int> queue;
+  BlockingMPMCQueue<int> queue;
   constexpr size_t kItems = 1000;
   std::atomic<size_t> consumed{0};
 
@@ -76,7 +76,7 @@ TEST(QueueTest, SingleProducerSingleConsumer) {
 }
 
 TEST(QueueTest, MultipleProducersSingleConsumer) {
-  UnboundedBlockingQueue<int> queue;
+  BlockingMPMCQueue<int> queue;
   constexpr size_t kProducers = 4;
   constexpr size_t kItemsPerProducer = 100;
   constexpr size_t kTotalItems = kProducers * kItemsPerProducer;
@@ -114,7 +114,7 @@ TEST(QueueTest, MultipleProducersSingleConsumer) {
 }
 
 TEST(QueueTest, SingleProducerMultipleConsumers) {
-  UnboundedBlockingQueue<int> queue;
+  BlockingMPMCQueue<int> queue;
   constexpr size_t kConsumers = 4;
   constexpr size_t kItemsPerConsumer = 100;
   constexpr size_t kTotalItems = kConsumers * kItemsPerConsumer;
@@ -159,7 +159,7 @@ TEST(QueueTest, SingleProducerMultipleConsumers) {
 }
 
 TEST(QueueTest, MultipleProducersMultipleConsumers) {
-  UnboundedBlockingQueue<int> queue;
+  BlockingMPMCQueue<int> queue;
   constexpr size_t kProducers = 3;
   constexpr size_t kConsumers = 3;
   constexpr size_t kItemsPerProducer = 100;
@@ -212,7 +212,7 @@ TEST(QueueTest, MultipleProducersMultipleConsumers) {
 }
 
 TEST(QueueTest, StressTest) {
-  UnboundedBlockingQueue<int> queue;
+  BlockingMPMCQueue<int> queue;
   constexpr size_t kProducers = 8;
   constexpr size_t kConsumers = 8;
   constexpr size_t kItemsPerProducer = 500;
@@ -257,7 +257,7 @@ TEST(QueueTest, StressTest) {
 }
 
 TEST(QueueTest, DoesNotBusyWait) {
-  UnboundedBlockingQueue<int> queue;
+  BlockingMPMCQueue<int> queue;
 
   std::thread consumer([&] {
     queue.take();
@@ -293,7 +293,7 @@ TEST(QueueTest, MoveOnlyType) {
     int value;
   };
 
-  UnboundedBlockingQueue<MoveOnly> queue;
+  BlockingMPMCQueue<MoveOnly> queue;
 
   queue.put(MoveOnly(42));
 

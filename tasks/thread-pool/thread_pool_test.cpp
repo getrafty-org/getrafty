@@ -5,7 +5,7 @@
 #include <wait_group.hpp>
 
 using namespace std::chrono_literals;
-using namespace getrafty::wheels::concurrent;
+using namespace getrafty::concurrent;
 
 TEST(ThreadPoolTest, JustWorks) {
   WaitGroup wg;

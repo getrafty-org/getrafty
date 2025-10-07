@@ -5,22 +5,22 @@
 #include <deque>
 #include <mutex>
 
-namespace getrafty::wheels::concurrent {
+namespace getrafty::concurrent {
 // Unbounded blocking multi-producers/multi-consumers queue
 template <typename T>
-class UnboundedBlockingQueue {
+class BlockingMPMCQueue {
  public:
-  UnboundedBlockingQueue() = default;
+  BlockingMPMCQueue() = default;
 
   // Non-copyable
-  UnboundedBlockingQueue(const UnboundedBlockingQueue&) = delete;
+  BlockingMPMCQueue(const BlockingMPMCQueue&) = delete;
 
-  UnboundedBlockingQueue& operator=(const UnboundedBlockingQueue&) = delete;
+  BlockingMPMCQueue& operator=(const BlockingMPMCQueue&) = delete;
 
   // Non-movable
-  UnboundedBlockingQueue(UnboundedBlockingQueue&&) = delete;
+  BlockingMPMCQueue(BlockingMPMCQueue&&) = delete;
 
-  ~UnboundedBlockingQueue() = default;
+  ~BlockingMPMCQueue() = default;
 
   void put(T v) {
     // ==== YOUR CODE: @b270 ====
@@ -50,4 +50,4 @@ class UnboundedBlockingQueue {
   std::mutex mutex_;
   [[maybe_unused]] std::condition_variable cv_;
 };
-}  // namespace getrafty::wheels::concurrent
+}  // namespace getrafty::concurrent

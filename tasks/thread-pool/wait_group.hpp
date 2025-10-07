@@ -3,7 +3,7 @@
 #include <mutex>
 #include <condition_variable>
 
-namespace getrafty::wheels::concurrent {
+namespace getrafty::concurrent {
 class WaitGroup {
  public:
   void add(const size_t tickets) {
@@ -30,4 +30,4 @@ class WaitGroup {
   size_t pending_tickets_{0};
   std::condition_variable cv_has_pending_tickets_;
 };
-}  // namespace getrafty::wheels::concurrent
+}  // namespace getrafty::concurrent
