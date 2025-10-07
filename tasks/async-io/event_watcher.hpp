@@ -14,7 +14,7 @@
 
 namespace getrafty::rpc::io {
 
-using wheels::concurrent::ThreadPool;
+using concurrent::ThreadPool;
 using EpollWaitFunc = std::function<int(int, epoll_event*, int, int)>;
 
 enum WatchFlag : uint8_t {
@@ -74,15 +74,15 @@ class Pipe {
 class EventWatcher {
  public:
   explicit EventWatcher(EpollWaitFunc epoll_impl = ::epoll_wait);
-  ~EventWatcher();
+  virtual ~EventWatcher();
 
   EventWatcher(const EventWatcher&) = delete;
   EventWatcher& operator=(const EventWatcher&) = delete;
   EventWatcher(EventWatcher&&) = delete;
   EventWatcher& operator=(EventWatcher&&) = delete;
 
-  void watch(int fd, WatchFlag flag, IWatchCallbackPtr callback);
-  void unwatch(int fd, WatchFlag flag);
+  virtual void watch(int fd, WatchFlag flag, IWatchCallbackPtr callback);
+  virtual void unwatch(int fd, WatchFlag flag);
   void unwatchAll();
 
  private:

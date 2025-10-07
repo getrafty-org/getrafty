@@ -9,7 +9,7 @@
 
 #include "queue.hpp"
 
-namespace getrafty::wheels::concurrent {
+namespace getrafty::concurrent {
 
 using Task = std::move_only_function<void()>;
 
@@ -41,8 +41,8 @@ class ThreadPool {
 
   std::atomic<State> state_;
   [[maybe_unused]] uint32_t worker_threads_count_;
-  UnboundedBlockingQueue<std::optional<Task>> worker_queue_;
+  BlockingMPMCQueue<std::optional<Task>> worker_queue_;
   std::vector<std::thread> worker_threads_;
 };
 
-}  // namespace getrafty::wheels::concurrent
+}  // namespace getrafty::concurrent

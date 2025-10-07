@@ -146,6 +146,8 @@ void EventWatcher::watch(const int fd, const WatchFlag flag,
     throw std::runtime_error("not running");
   }
 
+  std::cerr << "[EventWatcher::watch] fd=" << fd << " flag=" << (int)flag << "\n";
+
   epoll_event event{};
   event.data.fd = fd;
   event.events = 0;
@@ -153,13 +155,16 @@ void EventWatcher::watch(const int fd, const WatchFlag flag,
   bool fd_in_epoll = false;
   {
     const std::unique_lock lock{mutex_};
-    const auto [_, inserted] =
-        callbacks_.insert_or_assign({fd, flag}, std::move(callback));
+
+    auto [it, inserted] = callbacks_.insert_or_assign({fd, flag}, std::move(callback));
 
     if (!inserted) {
+      std::cerr << "[EventWatcher::watch] Callback already exists - calling wakeup and returning\n";
       wakeup();
       return;
     }
+
+    std::cerr << "[EventWatcher::watch] New callback registered\n";
 
     if (flag == RDONLY) {
       event.events |= EPOLLIN;
@@ -246,13 +251,14 @@ void EventWatcher::unwatchAll() {
 
 void EventWatcher::invokeCallback(const int fd, const WatchFlag flag) {
   // ==== YOUR CODE: @67d9 ====
-  throw std::runtime_error(fmt::format(/*TODO:*/"invokeCallback({},{})", fd, static_cast<int>(flag)));
+  throw std::runtime_error(fmt::format(/*TODO:*/ "invokeCallback({},{})", fd,
+                                       static_cast<int>(flag)));
   // ==== END YOUR CODE ====
 }
 
 void EventWatcher::waitLoop() {
   // ==== YOUR CODE: @1879 ====
-  throw std::runtime_error(/*TODO:*/"waitLoop()");
+  throw std::runtime_error(/*TODO:*/ "waitLoop()");
   // ==== END YOUR CODE ====
 }
 

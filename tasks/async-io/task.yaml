@@ -1,0 +1,13 @@
+binary_path: "{{build_dir}}/tasks/{{task}}/bin/{{binary}}"
+
+profiles:
+  none: {}
+
+  asan:
+    cmake_flags: -DASAN=ON
+
+  tsan:
+    cmake_flags: -DTSAN=ON
+
+tests:
+  - task_tasks_async-io_event_watcher_test
