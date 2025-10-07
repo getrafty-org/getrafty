@@ -1,43 +1,25 @@
-# Sanitizers
+option(ASAN "Enable Address Sanitizer" OFF)
+option(TSAN "Enable Thread Sanitizer" OFF)
+option(UBSAN "Enable Undefined Behavior Sanitizer" OFF)
 
-# --------------------------------------------------------------------
+if (ASAN AND TSAN)
+  message(FATAL_ERROR "ASAN and TSAN cannot be enabled simultaneously")
+endif()
 
-# UB Sanitizer
-# https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
-
-set(UBSAN_COMPILE_FLAGS -fsanitize=undefined -fno-sanitize-recover=all)
-set(UBSAN_LINK_FLAGS -fsanitize=undefined)
-
-if (UBSAN)
+if (UBSAN AND NOT ASAN)
   message(STATUS "Sanitize with UB Sanitizer (UBSAN)")
-  add_compile_options(${UBSAN_COMPILE_FLAGS})
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${UBSAN_LINK_FLAGS}")
+  add_compile_options(-fsanitize=undefined -fno-sanitize-recover=all)
+  add_link_options(-fsanitize=undefined)
 endif ()
-
-# --------------------------------------------------------------------
-
-# Address Sanitizer
-# https://clang.llvm.org/docs/AddressSanitizer.html
-
-set(ASAN_COMPILE_FLAGS -fsanitize=address,undefined -fno-sanitize-recover=all)
-set(ASAN_LINK_FLAGS -fsanitize=address,undefined)
 
 if (ASAN)
-  message(STATUS "Sanitize with Address Sanitizer (ASAN)")
-  add_compile_options(${ASAN_COMPILE_FLAGS})
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ASAN_LINK_FLAGS}")
+  message(STATUS "Sanitize with Address Sanitizer (ASAN + UBSAN)")
+  add_compile_options(-fsanitize=address,undefined -fno-sanitize-recover=all)
+  add_link_options(-fsanitize=address,undefined)
 endif ()
-
-# --------------------------------------------------------------------
-
-# Thread Sanitizer
-# https://clang.llvm.org/docs/ThreadSanitizer.html
-
-set(TSAN_COMPILE_FLAGS -fsanitize=thread -fno-sanitize-recover=all)
-set(TSAN_LINK_FLAGS -fsanitize=thread)
 
 if (TSAN)
   message(STATUS "Sanitize with Thread Sanitizer (TSAN)")
-  add_compile_options(${TSAN_COMPILE_FLAGS})
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${TSAN_LINK_FLAGS}")
+  add_compile_options(-fsanitize=thread -fno-sanitize-recover=all)
+  add_link_options(-fsanitize=thread)
 endif ()

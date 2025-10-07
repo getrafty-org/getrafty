@@ -7,15 +7,27 @@ CONTAINER_BIND_DIR="$(pwd)"
 CONTAINER_SSH_PORT=3333
 CONTAINER_SITE_PORT=3000
 
-error_exit() {
-    printf "Error: %s\n" "$1" >&2
+R='\033[31m'
+G='\033[32m'
+Y='\033[33m'
+C='\033[36m'
+M='\033[35m'
+B='\033[1m'
+N='\033[0m'
+
+info() { printf "${C}>${N} %s\n" "$1"; }
+ok() { printf "${G}OK${N} %s\n" "$1"; }
+fail() { printf "${R}FAIL${N} %s\n" "$1" >&2; }
+warn() { printf "${Y}WARN${N} %s\n" "$1"; }
+
+die() {
+    fail "$1"
     exit 1
 }
 
-check_docker_is_installed() {
-    if ! command -v docker >/dev/null 2>&1; then
-        error_exit "Docker is not installed. Please install Docker first."
-    fi
+
+check_docker() {
+    command -v docker >/dev/null 2>&1 || die "docker not found"
 }
 
 check_container_exists() {
@@ -53,13 +65,157 @@ confirm() {
     esac
 }
 
+cfg() {
+    d="$1"
+    key="$2"
+    if [ -f "$d/task.yaml" ]; then
+        yq eval ".$key // \"\"" "$d/task.yaml" 2>/dev/null | grep -v '^null$' || echo ""
+    else
+        echo ""
+    fi
+}
+
+get_profiles() {
+    d="$1"
+    if [ -f "$d/task.yaml" ]; then
+        yq eval '.profiles | keys | .[]' "$d/task.yaml" 2>/dev/null || echo "none"
+    else
+        echo "none"
+    fi
+}
+
+get_tests() {
+    d="$1"
+    if [ -f "$d/task.yaml" ]; then
+        yq eval '.tests[]? // ""' "$d/task.yaml" 2>/dev/null | grep -v '^null$' || cfg "$d" "tests"
+    else
+        cfg "$d" "tests"
+    fi
+}
+
+expand() {
+    result="$1"
+    shift
+    while [ $# -gt 0 ]; do
+        result=$(echo "$result" | sed "s|{{$1}}|$2|g")
+        shift 2
+    done
+    echo "$result"
+}
+
+runcmd() {
+    d="$1"
+    cmd="$2"
+    shift 2
+
+    template=$(cfg "$d" "commands.$cmd")
+    [ -z "$template" ] && template=$(cfg "$d" "command.$cmd")
+
+    # Convention over configuration defaults
+    if [ -z "$template" ]; then
+        case "$cmd" in
+            configure)
+                template='cmake -S {{project_root}} -B {{build_dir}} -DCMAKE_C_COMPILER={{c_compiler}} -DCMAKE_CXX_COMPILER={{cxx_compiler}} {{flags}}'
+                ;;
+            build)
+                template='cmake --build {{build_dir}} --target {{target}} -j$(nproc)'
+                ;;
+            run)
+                template='{{binary_path}}'
+                ;;
+            clean)
+                template='rm -rf {{build_dir}}'
+                ;;
+        esac
+    fi
+
+    eval "$(expand "$template" "$@")"
+}
+
+build_profile() {
+    d="tasks/$1"
+    p="$2"
+
+    info "build $1 [$p]"
+
+    cc=$(cfg "$d" "compiler.c")
+    [ -z "$cc" ] && cc=$(cfg "$d" "cmake.c_compiler")
+    [ -z "$cc" ] && cc="clang-19"
+
+    cxx=$(cfg "$d" "compiler.cxx")
+    [ -z "$cxx" ] && cxx=$(cfg "$d" "cmake.cxx_compiler")
+    [ -z "$cxx" ] && cxx="clang++-19"
+
+    bdir=$(cfg "$d" "profiles.$p.build_dir")
+    [ -z "$bdir" ] && bdir=$(cfg "$d" "profile.$p.build_dir")
+    [ -z "$bdir" ] && bdir="build/$p"
+
+    flags=$(cfg "$d" "profiles.$p.cmake_flags")
+    [ -z "$flags" ] && flags=$(cfg "$d" "profile.$p.cmake_flags")
+
+    root="$(pwd)"
+
+    out=$(runcmd "$d" "configure" \
+        "c_compiler" "$cc" \
+        "cxx_compiler" "$cxx" \
+        "flags" "$flags" \
+        "root" "$root" \
+        "project_root" "$root" \
+        "build_dir" "$bdir" 2>&1) || {
+        fail "configure failed"
+        printf "%s\n" "$out" >&2
+        return 1
+    }
+
+    for t in $(get_tests "$d"); do
+        out=$(runcmd "$d" "build" "build_dir" "$bdir" "target" "$t" 2>&1) || {
+            fail "build $t failed"
+            printf "%s\n" "$out" >&2
+            return 1
+        }
+    done
+
+    ok "build $1 [$p]"
+}
+
+run_profile_tests() {
+    d="tasks/$1"
+    p="$2"
+
+    info "test $1 [$p]"
+
+    tpl=$(cfg "$d" "binary_path")
+    bdir=$(cfg "$d" "profiles.$p.build_dir")
+    [ -z "$bdir" ] && bdir=$(cfg "$d" "profile.$p.build_dir")
+    [ -z "$bdir" ] && bdir="build/$p"
+    fail_cnt=0
+
+    for t in $(get_tests "$d"); do
+        bin=$(expand "$tpl" "build_dir" "$bdir" "task" "$1" "binary" "$t")
+        [ -f "$bin" ] || {
+            warn "$t: not found"
+            continue
+        }
+
+        out=$(runcmd "$d" "run" "binary_path" "$bin" "binary" "$bin" 2>&1) && {
+            ok "$t"
+        } || {
+            fail "$t"
+            printf "%s\n" "$out" >&2
+            fail_cnt=$((fail_cnt + 1))
+        }
+    done
+
+    [ $fail_cnt -eq 0 ]
+}
+
 cmd_boot() {
     build_flag=0
     if [ "$1" = "--build" ]; then
         build_flag=1
     fi
 
-    check_docker_is_installed
+    check_docker
 
     if [ $build_flag -eq 1 ]; then
         if [ -n "$(check_container_is_running)" ]; then
@@ -131,7 +287,7 @@ cmd_attach() {
 }
 
 cmd_restart() {
-    check_docker_is_installed
+    check_docker
 
     container_id=$(check_container_exists)
     if [ -z "$container_id" ]; then
@@ -143,19 +299,93 @@ cmd_restart() {
     printf "Container restarted successfully. Connect by running: \`tasklet attach\`.\n"
 }
 
+cmd_test() {
+    if [ "$(whoami)" != "$CONTAINER_USER" ] && [ -n "${CONTAINER_NAME:-}" ]; then
+        c=$(check_container_is_running)
+        [ -z "$c" ] && die "container not running"
+        docker exec -u "$CONTAINER_USER" -w /home/$CONTAINER_USER/workspace "$c" ./tasklet test "$@"
+        return $?
+    fi
+
+    [ -z "$1" ] && die "task name required"
+    d="tasks/$1"
+    [ -d "$d" ] || die "task not found: $1"
+
+    fail_cnt=0
+    for p in $(get_profiles "$d"); do
+        build_profile "$1" "$p" || { fail_cnt=$((fail_cnt + 1)); continue; }
+        run_profile_tests "$1" "$p" || fail_cnt=$((fail_cnt + 1))
+    done
+
+    [ $fail_cnt -eq 0 ] && { ok "all tests passed"; exit 0; }
+    fail "$fail_cnt profile(s) failed"
+    exit 1
+}
+
+cmd_build() {
+    if [ "$(whoami)" != "$CONTAINER_USER" ] && [ -n "${CONTAINER_NAME:-}" ]; then
+        c=$(check_container_is_running)
+        [ -z "$c" ] && die "container not running"
+        docker exec -u "$CONTAINER_USER" -w /home/$CONTAINER_USER/workspace "$c" ./tasklet build "$@"
+        return $?
+    fi
+
+    [ -z "$1" ] && die "task name required"
+    d="tasks/$1"
+    [ -d "$d" ] || die "task not found: $1"
+
+    for p in $(get_profiles "$d"); do
+        build_profile "$1" "$p" || exit 1
+    done
+
+    ok "all builds done"
+}
+
+cmd_clean() {
+    if [ "$(whoami)" != "$CONTAINER_USER" ] && [ -n "${CONTAINER_NAME:-}" ]; then
+        c=$(check_container_is_running)
+        [ -z "$c" ] && die "container not running"
+        docker exec -u "$CONTAINER_USER" -w /home/$CONTAINER_USER/workspace "$c" ./tasklet clean "$@"
+        return $?
+    fi
+
+    [ -z "$1" ] && die "task name required"
+    d="tasks/$1"
+    [ -d "$d" ] || die "task not found: $1"
+
+    for p in $(get_profiles "$d"); do
+        bdir=$(cfg "$d" "profile.$p.build_dir")
+        [ -z "$bdir" ] && bdir=$(cfg "$d" "profiles.$p.build_dir")
+        [ -d "$bdir" ] && runcmd "$d" "clean" "build_dir" "$bdir"
+    done
+
+    ok "clean done"
+}
+
+cmd_list() {
+    for d in tasks/*; do
+        [ -d "$d" ] || continue
+        [ -f "$d/task.yaml" ] || continue
+        name=$(basename "$d")
+        desc=$(cfg "$d" "description")
+        printf "%s: %s\n" "$name" "$desc"
+    done
+}
+
 usage() {
     cat <<EOF
-Tasklet
+usage: tasklet <command> [options]
 
-Usage:
-  tasklet boot [--build]    Build and run the development VM
-  tasklet attach [--root]   Attach to the running DevVM
-  tasklet restart           Restart the container
-  tasklet help              Show this help message
+container:
+  boot [--build]    start dev container
+  attach [--root]   attach to container
+  restart           restart container
 
-Options:
-  --build                   Rebuild the container image
-  --root                    Attach with root access
+tasks:
+  test <task>       run all tests
+  build <task>      build all profiles
+  clean <task>      clean build artifacts
+  list              list tasks
 EOF
 }
 
@@ -171,6 +401,21 @@ case "${1:-}" in
     restart)
         shift
         cmd_restart "$@"
+        ;;
+    test)
+        shift
+        cmd_test "$@"
+        ;;
+    build)
+        shift
+        cmd_build "$@"
+        ;;
+    clean)
+        shift
+        cmd_clean "$@"
+        ;;
+    list)
+        cmd_list
         ;;
     help|--help|-h|"")
         usage
