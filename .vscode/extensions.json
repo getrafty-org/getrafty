@@ -1,0 +1,20 @@
+{
+    "recommendations": [
+        "github.github-vscode-theme",
+        "llvm-vs-code-extensions.vscode-clangd",
+        "anthropic.claude-code",
+        "kylinideteam.cmake-intellisence",
+        "ms-vscode.cmake-tools",
+        "streetsidesoftware.code-spell-checker",
+        "openai.chatgpt",
+        "ms-azuretools.vscode-containers",
+        "streetsidesoftware.code-spell-checker-cspell-bundled-dictionaries",
+        "getrafty.fgmpack",
+        "unifiedjs.vscode-mdx",
+        "ms-vscode-remote.remote-ssh",
+        "ms-vscode-remote.remote-ssh-edit",
+        "ms-vscode.remote-explorer",
+        "redhat.vscode-xml",
+        "redhat.vscode-yaml"
+    ]
+}

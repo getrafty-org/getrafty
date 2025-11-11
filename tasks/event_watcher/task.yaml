@@ -1,0 +1,4 @@
+binary_path: "{{build_dir}}/tasks/{{task}}/bin/{{binary}}"
+
+tests:
+  - task_tasks_event_watcher_event_watcher_test

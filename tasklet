@@ -6,7 +6,7 @@ CONTAINER_USER="ubuntu"
 CONTAINER_BIND_DIR="$(pwd)"
 CONTAINER_SSH_PORT=3333
 CONTAINER_SITE_PORT=3000
-
+CONTAINER_FILE_PORT=8000
 R='\033[31m'
 G='\033[32m'
 Y='\033[33m'
@@ -25,9 +25,12 @@ die() {
     exit 1
 }
 
-
 check_docker() {
     command -v docker >/dev/null 2>&1 || die "docker not found"
+}
+
+check_yq() {
+    command -v yq >/dev/null 2>&1 || die "yq not found"
 }
 
 check_container_exists() {
@@ -76,12 +79,8 @@ cfg() {
 }
 
 get_profiles() {
-    d="$1"
-    if [ -f "$d/task.yaml" ]; then
-        yq eval '.profiles | keys | .[]' "$d/task.yaml" 2>/dev/null || echo "none"
-    else
-        echo "none"
-    fi
+    [ -f "cmake-variants.yaml" ] || die "cmake-variants.yaml not found"
+    yq eval '.buildType.choices | keys | .[]' cmake-variants.yaml 2>/dev/null
 }
 
 get_tests() {
@@ -140,20 +139,29 @@ build_profile() {
 
     cc=$(cfg "$d" "compiler.c")
     [ -z "$cc" ] && cc=$(cfg "$d" "cmake.c_compiler")
-    [ -z "$cc" ] && cc="clang-19"
+    [ -z "$cc" ] && cc="clang"
 
     cxx=$(cfg "$d" "compiler.cxx")
     [ -z "$cxx" ] && cxx=$(cfg "$d" "cmake.cxx_compiler")
-    [ -z "$cxx" ] && cxx="clang++-19"
+    [ -z "$cxx" ] && cxx="clang++"
 
-    bdir=$(cfg "$d" "profiles.$p.build_dir")
-    [ -z "$bdir" ] && bdir=$(cfg "$d" "profile.$p.build_dir")
-    [ -z "$bdir" ] && bdir="build/$p"
+    bdir="build"
 
-    flags=$(cfg "$d" "profiles.$p.cmake_flags")
-    [ -z "$flags" ] && flags=$(cfg "$d" "profile.$p.cmake_flags")
+    btype=$(yq eval ".buildType.choices.$p.buildType" cmake-variants.yaml 2>/dev/null)
+    [ -z "$btype" ] && btype="Debug"
+
+    flags="-DCMAKE_BUILD_TYPE=$btype"
+    for key in $(yq eval ".buildType.choices.$p.settings | keys | .[]" cmake-variants.yaml 2>/dev/null); do
+        val=$(yq eval ".buildType.choices.$p.settings.$key" cmake-variants.yaml 2>/dev/null)
+        if [ -n "$val" ]; then
+            flags="$flags -D$key=$val"
+        fi
+    done
 
     root="$(pwd)"
+
+    # Remove CMake cache to avoid conflicts between different build profiles
+    [ -f "$bdir/CMakeCache.txt" ] && rm -f "$bdir/CMakeCache.txt"
 
     out=$(runcmd "$d" "configure" \
         "c_compiler" "$cc" \
@@ -185,9 +193,7 @@ run_profile_tests() {
     info "test $1 [$p]"
 
     tpl=$(cfg "$d" "binary_path")
-    bdir=$(cfg "$d" "profiles.$p.build_dir")
-    [ -z "$bdir" ] && bdir=$(cfg "$d" "profile.$p.build_dir")
-    [ -z "$bdir" ] && bdir="build/$p"
+    bdir="build"
     fail_cnt=0
 
     for t in $(get_tests "$d"); do
@@ -197,13 +203,18 @@ run_profile_tests() {
             continue
         }
 
-        out=$(runcmd "$d" "run" "binary_path" "$bin" "binary" "$bin" 2>&1) && {
+        # Set coverage output location if in Debug mode
+        test_name=$(basename "$bin")
+        export LLVM_PROFILE_FILE="${bdir}/coverage/${test_name}-%p.profraw"
+
+        out=$(runcmd "$d" "run" "binary_path" "$bin" "binary" "$bin" 2>&1)
+        if [ $? -eq 0 ]; then
             ok "$t"
-        } || {
+        else
             fail "$t"
             printf "%s\n" "$out" >&2
             fail_cnt=$((fail_cnt + 1))
-        }
+        fi
     done
 
     [ $fail_cnt -eq 0 ]
@@ -255,6 +266,7 @@ cmd_boot() {
         -v "${CONTAINER_BIND_DIR}:/home/${CONTAINER_USER}/workspace/" \
         -p "${CONTAINER_SSH_PORT}:22" \
         -p "${CONTAINER_SITE_PORT}:${CONTAINER_SITE_PORT}" \
+        -p "${CONTAINER_FILE_PORT}:${CONTAINER_FILE_PORT}" \
         "$CONTAINER_NAME" >/dev/null
 
     docker exec "$CONTAINER_NAME" /bin/sh -c "mkdir -p /home/${CONTAINER_USER}/.tasklet"
@@ -262,6 +274,7 @@ cmd_boot() {
     docker exec "$CONTAINER_NAME" /bin/sh -c "cat /home/${CONTAINER_USER}/.tasklet/.bashrc >> /home/${CONTAINER_USER}/.bashrc"
 
     printf "Connect by running: \`tasklet attach\`.\n"
+    printf "File server available at http://localhost:%s/\n" "${CONTAINER_FILE_PORT}"
 }
 
 cmd_attach() {
@@ -278,7 +291,7 @@ cmd_attach() {
     if [ $root_flag -eq 1 ]; then
         docker exec -it "$container_id" /bin/bash
     else
-        host_ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+        host_ip=$(hostname -i 2>/dev/null | awk '{print $1}')
         if [ -z "$host_ip" ]; then
             host_ip=$(ifconfig 2>/dev/null | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -1)
         fi
@@ -322,24 +335,6 @@ cmd_test() {
     exit 1
 }
 
-cmd_build() {
-    if [ "$(whoami)" != "$CONTAINER_USER" ] && [ -n "${CONTAINER_NAME:-}" ]; then
-        c=$(check_container_is_running)
-        [ -z "$c" ] && die "container not running"
-        docker exec -u "$CONTAINER_USER" -w /home/$CONTAINER_USER/workspace "$c" ./tasklet build "$@"
-        return $?
-    fi
-
-    [ -z "$1" ] && die "task name required"
-    d="tasks/$1"
-    [ -d "$d" ] || die "task not found: $1"
-
-    for p in $(get_profiles "$d"); do
-        build_profile "$1" "$p" || exit 1
-    done
-
-    ok "all builds done"
-}
 
 cmd_clean() {
     if [ "$(whoami)" != "$CONTAINER_USER" ] && [ -n "${CONTAINER_NAME:-}" ]; then
@@ -353,11 +348,8 @@ cmd_clean() {
     d="tasks/$1"
     [ -d "$d" ] || die "task not found: $1"
 
-    for p in $(get_profiles "$d"); do
-        bdir=$(cfg "$d" "profile.$p.build_dir")
-        [ -z "$bdir" ] && bdir=$(cfg "$d" "profiles.$p.build_dir")
-        [ -d "$bdir" ] && runcmd "$d" "clean" "build_dir" "$bdir"
-    done
+    bdir="build"
+    [ -d "$bdir" ] && runcmd "$d" "clean" "build_dir" "$bdir"
 
     ok "clean done"
 }
@@ -372,6 +364,36 @@ cmd_list() {
     done
 }
 
+cmd_coverage() {
+    if [ "$(whoami)" != "$CONTAINER_USER" ] && [ -n "${CONTAINER_NAME:-}" ]; then
+        c=$(check_container_is_running)
+        [ -z "$c" ] && die "container not running"
+        docker exec -u "$CONTAINER_USER" -w /home/$CONTAINER_USER/workspace "$c" ./tasklet coverage "$@"
+        return $?
+    fi
+
+    [ -z "$1" ] && die "task name required"
+    d="tasks/$1"
+    [ -d "$d" ] || die "task not found: $1"
+
+    # Build in Debug mode with coverage
+    p="Debug"
+    info "coverage $1 [$p]"
+
+    build_profile "$1" "$p" || die "build failed"
+
+    # Run tests with coverage collection
+    run_profile_tests "$1" "$p" || die "tests failed"
+
+    # Generate coverage report
+    bdir="build"
+    coverage_script="${bdir}/create-coverage-report.sh"
+    [ -f "$coverage_script" ] || die "coverage script not found"
+
+    "$coverage_script" || die "coverage generation failed"
+    ok "coverage $1 [$p]"
+}
+
 usage() {
     cat <<EOF
 usage: tasklet <command> [options]
@@ -383,8 +405,8 @@ container:
 
 tasks:
   test <task>       run all tests
-  build <task>      build all profiles
   clean <task>      clean build artifacts
+  coverage <task>   run tests and generate coverage report
   list              list tasks
 EOF
 }
@@ -406,13 +428,13 @@ case "${1:-}" in
         shift
         cmd_test "$@"
         ;;
-    build)
-        shift
-        cmd_build "$@"
-        ;;
     clean)
         shift
         cmd_clean "$@"
+        ;;
+    coverage)
+        shift
+        cmd_coverage "$@"
         ;;
     list)
         cmd_list

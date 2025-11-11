@@ -11,6 +11,10 @@ include(cmake/CompileOptions.cmake)
 include(cmake/Sanitize.cmake)
 include(cmake/Platform.cmake)
 
+enable_testing()
+
+include(cmake/Coverage.cmake)
+
 add_subdirectory(third-party)
 
 # This must be included after library so that
@@ -18,4 +22,5 @@ add_subdirectory(third-party)
 include(cmake/Werror.cmake)
 include(cmake/Task.cmake)
 
+add_subdirectory(bits)
 add_subdirectory(tasks)

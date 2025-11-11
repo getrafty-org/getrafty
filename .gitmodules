@@ -10,3 +10,7 @@
 [submodule "fragments"]
 	path = fragments
 	url = https://github.com/getrafty-org/fragments.git
+[submodule "bits"]
+	path = bits
+	url = git@github.com:sidosera/bits.git
+	branch = main

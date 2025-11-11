@@ -8,7 +8,27 @@
       "UBSAN_OPTIONS": "print_stacktrace=1"
     },
     "stopOnEntry": false,
-    "debuggerPath": "/usr/lib/llvm-19/bin/lldb-dap"
+    "debuggerPath": "lldb-dap"
   },
-  "cmake.generator": "Unix Makefiles"
+  "cmake.generator": "Unix Makefiles",
+  "clangd.path": "clangd-21",
+  "clangd.arguments": [
+    "--clang-tidy",
+  ],
+  "cSpell.words": [
+    "bugprone",
+    "cppcoreguidelines",
+    "epoll",
+    "EPOLLERR",
+    "EPOLLHUP",
+    "EPOLLIN",
+    "EPOLLOUT",
+    "EPOLLRDHUP",
+    "fgmpack",
+    "getrafty",
+    "gtest",
+    "MPMC",
+    "MPSC",
+    "Vyukov"
+  ]
 }

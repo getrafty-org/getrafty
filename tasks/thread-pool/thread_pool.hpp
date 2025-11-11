@@ -41,7 +41,7 @@ class ThreadPool {
 
   std::atomic<State> state_;
   [[maybe_unused]] uint32_t worker_threads_count_;
-  BlockingMPMCQueue<std::optional<Task>> worker_queue_;
+  Queue<std::optional<Task>> worker_queue_;
   std::vector<std::thread> worker_threads_;
 };
 

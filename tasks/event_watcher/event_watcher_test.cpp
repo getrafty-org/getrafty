@@ -23,7 +23,7 @@
 #include "event_watcher.hpp"
 
 using namespace std::chrono_literals;
-using namespace getrafty::rpc::io;
+using namespace getrafty::io;
 using ::testing::StrictMock;
 
 namespace {
@@ -73,34 +73,38 @@ int getPipeBufferSize(int fd) {
 
 }  // namespace
 
-using Pipe = getrafty::rpc::io::detail::Pipe;
+using Pipe = getrafty::io::detail::Pipe;
 
-class ReadMockCallback : public IWatchCallback {
+class ReadMockCallback {
  public:
   MOCK_METHOD(void, onReadReadyMock, (int fd, const std::string& data));
 
-  void run(int fd) override {
-    std::array<char, kMockCallbackBufferSize> buffer{};
-    const auto bytes_read = ::read(fd, buffer.data(), buffer.size());
-    if (bytes_read > 0) {
-      onReadReadyMock(fd, std::string(buffer.data(), bytes_read));
-    }
+  WatchCallback makeCallback(int fd) {
+    return [this, fd]() {
+      std::array<char, kMockCallbackBufferSize> buffer{};
+      const auto bytes_read = ::read(fd, buffer.data(), buffer.size());
+      if (bytes_read > 0) {
+        onReadReadyMock(fd, std::string(buffer.data(), bytes_read));
+      }
+    };
   }
 };
 
-class WriteMockCallback : public IWatchCallback {
+class WriteMockCallback {
  public:
   MOCK_METHOD(void, onWriteReadyMock, (int fd, const std::string& data));
 
-  void run(int fd) override {
-    const auto payload = getLastWritten();
-    if (payload.empty()) {
-      return;
-    }
-    const auto bytes_written = ::write(fd, payload.data(), payload.size());
-    if (bytes_written > 0) {
-      onWriteReadyMock(fd, payload);
-    }
+  WatchCallback makeCallback(int fd) {
+    return [this, fd]() {
+      const auto payload = getLastWritten();
+      if (payload.empty()) {
+        return;
+      }
+      const auto bytes_written = ::write(fd, payload.data(), payload.size());
+      if (bytes_written > 0) {
+        onWriteReadyMock(fd, payload);
+      }
+    };
   }
 
   void setLastWritten(std::string value) {
@@ -140,39 +144,39 @@ TEST_F(EventWatcherTest, ReadCallbackCalledWhenReady) {
   std::promise<std::string> promise;
   auto future = promise.get_future();
 
-  EXPECT_CALL(*mock_callback, onReadReadyMock(pipe.read_fd(), test_data))
+  EXPECT_CALL(*mock_callback, onReadReadyMock(pipe.read_end_, test_data))
       .WillOnce([&promise](int, const std::string& payload) {
         promise.set_value(payload);
       });
 
-  watcher.watch(pipe.read_fd(), RDONLY, mock_callback);
-  assertFullWrite(pipe.write_fd(), test_data);
+  watcher.watch(pipe.read_end_, RDONLY, mock_callback->makeCallback(pipe.read_end_));
+  assertFullWrite(pipe.write_end_, test_data);
 
   EXPECT_EQ(waitForFuture(future), test_data);
-  watcher.unwatch(pipe.read_fd(), RDONLY);
+  watcher.unwatch(pipe.read_end_, RDONLY);
 }
 
 TEST_F(EventWatcherTest, WriteCallbackNotCalledWhenBufferFull) {
   Pipe pipe;
 
-  const auto buffer_size = getPipeBufferSize(pipe.write_fd());
+  const auto buffer_size = getPipeBufferSize(pipe.write_end_);
   const std::string fill_data(buffer_size, 'x');
-  assertFullWrite(pipe.write_fd(), fill_data);
+  assertFullWrite(pipe.write_end_, fill_data);
 
   auto mock_callback = std::make_shared<StrictMock<WriteMockCallback>>();
   mock_callback->setLastWritten("y");
 
   EXPECT_CALL(*mock_callback, onWriteReadyMock).Times(0);
 
-  watcher.watch(pipe.write_fd(), WRONLY, mock_callback);
+  watcher.watch(pipe.write_end_, WRONLY, mock_callback->makeCallback(pipe.write_end_));
   std::this_thread::sleep_for(kIdleWait);
-  watcher.unwatch(pipe.write_fd(), WRONLY);
+  watcher.unwatch(pipe.write_end_, WRONLY);
 }
 
 TEST_F(EventWatcherTest, WriteCallbackCalledOnceWhenBufferHasCapacity) {
   Pipe pipe;
 
-  const auto buffer_size = getPipeBufferSize(pipe.write_fd());
+  const auto buffer_size = getPipeBufferSize(pipe.write_end_);
   const std::string fill_data(buffer_size, 'x');
 
   auto mock_callback = std::make_shared<StrictMock<WriteMockCallback>>();
@@ -181,20 +185,20 @@ TEST_F(EventWatcherTest, WriteCallbackCalledOnceWhenBufferHasCapacity) {
   std::promise<std::string> promise;
   auto future = promise.get_future();
 
-  EXPECT_CALL(*mock_callback, onWriteReadyMock(pipe.write_fd(), fill_data))
+  EXPECT_CALL(*mock_callback, onWriteReadyMock(pipe.write_end_, fill_data))
       .WillOnce([&](int, const std::string& payload) {
         promise.set_value(payload);
         mock_callback->setLastWritten("");
       });
 
-  watcher.watch(pipe.write_fd(), WRONLY, mock_callback);
+  watcher.watch(pipe.write_end_, WRONLY, mock_callback->makeCallback(pipe.write_end_));
   EXPECT_EQ(waitForFuture(future), fill_data);
 
   std::this_thread::sleep_for(kIdleWait);
-  watcher.unwatch(pipe.write_fd(), WRONLY);
+  watcher.unwatch(pipe.write_end_, WRONLY);
 
   std::vector<char> buffer(buffer_size);
-  ASSERT_EQ(::read(pipe.read_fd(), buffer.data(), buffer.size()), buffer_size);
+  ASSERT_EQ(::read(pipe.read_end_, buffer.data(), buffer.size()), buffer_size);
   EXPECT_EQ(std::string(buffer.data(), buffer_size), fill_data);
 }
 
@@ -204,9 +208,9 @@ TEST_F(EventWatcherTest, NoCallbackIfFdNotReadyForRead) {
 
   EXPECT_CALL(*mock_callback, onReadReadyMock).Times(0);
 
-  watcher.watch(pipe.read_fd(), RDONLY, mock_callback);
+  watcher.watch(pipe.read_end_, RDONLY, mock_callback->makeCallback(pipe.read_end_));
   std::this_thread::sleep_for(kIdleWait);
-  watcher.unwatch(pipe.read_fd(), RDONLY);
+  watcher.unwatch(pipe.read_end_, RDONLY);
 }
 
 TEST_F(EventWatcherTest, DuplicateWatchRequests) {
@@ -217,16 +221,16 @@ TEST_F(EventWatcherTest, DuplicateWatchRequests) {
   std::promise<void> promise;
   auto future = promise.get_future();
 
-  EXPECT_CALL(*mock_callback, onReadReadyMock(pipe.read_fd(), ::testing::_))
+  EXPECT_CALL(*mock_callback, onReadReadyMock(pipe.read_end_, ::testing::_))
       .WillOnce([&promise](int, const std::string&) { promise.set_value(); });
 
-  watcher.watch(pipe.read_fd(), RDONLY, mock_callback);
-  watcher.watch(pipe.read_fd(), RDONLY, mock_callback);
+  watcher.watch(pipe.read_end_, RDONLY, mock_callback->makeCallback(pipe.read_end_));
+  watcher.watch(pipe.read_end_, RDONLY, mock_callback->makeCallback(pipe.read_end_));
 
-  assertFullWrite(pipe.write_fd(), test_data);
+  assertFullWrite(pipe.write_end_, test_data);
 
   waitForFuture(future);
-  watcher.unwatch(pipe.read_fd(), RDONLY);
+  watcher.unwatch(pipe.read_end_, RDONLY);
 }
 
 TEST_F(EventWatcherTest, NoCallbackAfterUnwatch) {
@@ -235,11 +239,11 @@ TEST_F(EventWatcherTest, NoCallbackAfterUnwatch) {
 
   EXPECT_CALL(*mock_callback, onReadReadyMock).Times(0);
 
-  watcher.watch(pipe.read_fd(), RDONLY, mock_callback);
-  watcher.unwatch(pipe.read_fd(), RDONLY);
+  watcher.watch(pipe.read_end_, RDONLY, mock_callback->makeCallback(pipe.read_end_));
+  watcher.unwatch(pipe.read_end_, RDONLY);
 
   const std::string test_data = "Test Data";
-  assertFullWrite(pipe.write_fd(), test_data);
+  assertFullWrite(pipe.write_end_, test_data);
 
   std::this_thread::sleep_for(kIdleWait);
 }
@@ -269,7 +273,7 @@ TEST_F(EventWatcherTest, RetryOnEINTR) {
   std::condition_variable cv;
   bool ready_for_next_write = true;
 
-  EXPECT_CALL(*mock_callback, onReadReadyMock(pipe.read_fd(), ::testing::_))
+  EXPECT_CALL(*mock_callback, onReadReadyMock(pipe.read_end_, ::testing::_))
       .WillRepeatedly([&](int, const std::string&) {
         ++callback_count;
         {
@@ -279,13 +283,13 @@ TEST_F(EventWatcherTest, RetryOnEINTR) {
         cv.notify_one();
       });
 
-  watcher.watch(pipe.read_fd(), RDONLY, mock_callback);
+  watcher.watch(pipe.read_end_, RDONLY, mock_callback->makeCallback(pipe.read_end_));
 
   auto writeWhenReady = [&](std::string_view data) {
     std::unique_lock lock{mtx};
     cv.wait(lock, [&] { return ready_for_next_write; });
     ready_for_next_write = false;
-    assertFullWrite(pipe.write_fd(), data);
+    assertFullWrite(pipe.write_end_, data);
   };
 
   for (int i = 0; i < kNumWrites; ++i) {
@@ -301,7 +305,7 @@ TEST_F(EventWatcherTest, RetryOnEINTR) {
   EXPECT_GE(success_count, 1);
   EXPECT_EQ(callback_count.load(), kNumWrites);
 
-  watcher.unwatch(pipe.read_fd(), RDONLY);
+  watcher.unwatch(pipe.read_end_, RDONLY);
 }
 
 TEST_F(EventWatcherTest, EpollBlocksWithNoWatchers) {
@@ -337,27 +341,27 @@ TEST_F(EventWatcherTest, SimultaneousReadWriteCallbacksOnSameFd) {
   std::promise<void> write_promise;
   auto write_future = write_promise.get_future();
 
-  EXPECT_CALL(*read_callback, onReadReadyMock(pipe.read_fd(), test_data))
+  EXPECT_CALL(*read_callback, onReadReadyMock(pipe.read_end_, test_data))
       .WillOnce([&](int, const std::string&) {
         read_promise.set_value();
       })
       .WillRepeatedly(::testing::Return());
 
-  EXPECT_CALL(*write_callback, onWriteReadyMock(pipe.write_fd(), test_data))
+  EXPECT_CALL(*write_callback, onWriteReadyMock(pipe.write_end_, test_data))
       .WillOnce([&](int, const std::string&) {
         write_promise.set_value();
         write_callback->setLastWritten("");
       })
       .WillRepeatedly(::testing::Return());
 
-  watcher.watch(pipe.read_fd(), RDONLY, read_callback);
-  watcher.watch(pipe.write_fd(), WRONLY, write_callback);
+  watcher.watch(pipe.read_end_, RDONLY, read_callback->makeCallback(pipe.read_end_));
+  watcher.watch(pipe.write_end_, WRONLY, write_callback->makeCallback(pipe.write_end_));
 
   waitForFuture(write_future);
   waitForFuture(read_future);
 
-  watcher.unwatch(pipe.read_fd(), RDONLY);
-  watcher.unwatch(pipe.write_fd(), WRONLY);
+  watcher.unwatch(pipe.read_end_, RDONLY);
+  watcher.unwatch(pipe.write_end_, WRONLY);
 }
 
 TEST_F(EventWatcherTest, UnwatchOneFlagKeepsTheOther) {
@@ -385,8 +389,8 @@ TEST_F(EventWatcherTest, UnwatchOneFlagKeepsTheOther) {
 
   write_callback->setLastWritten(test_data);
 
-  watcher.watch(fd, RDONLY, read_callback);
-  watcher.watch(fd, WRONLY, write_callback);
+  watcher.watch(fd, RDONLY, read_callback->makeCallback(fd));
+  watcher.watch(fd, WRONLY, write_callback->makeCallback(fd));
 
   watcher.unwatch(fd, RDONLY);
 
@@ -404,24 +408,24 @@ TEST_F(EventWatcherTest, RapidWatchUnwatchCycles) {
   EXPECT_CALL(*mock_callback, onReadReadyMock).Times(0);
 
   for (int i = 0; i < 100; ++i) {
-    watcher.watch(pipe.read_fd(), RDONLY, mock_callback);
-    watcher.unwatch(pipe.read_fd(), RDONLY);
+    watcher.watch(pipe.read_end_, RDONLY, mock_callback->makeCallback(pipe.read_end_));
+    watcher.unwatch(pipe.read_end_, RDONLY);
   }
 
   std::promise<void> promise;
   auto future = promise.get_future();
 
   auto final_callback = std::make_shared<StrictMock<ReadMockCallback>>();
-  EXPECT_CALL(*final_callback, onReadReadyMock(pipe.read_fd(), ::testing::_))
+  EXPECT_CALL(*final_callback, onReadReadyMock(pipe.read_end_, ::testing::_))
       .WillOnce([&](int, const std::string&) {
         promise.set_value();
       });
 
-  watcher.watch(pipe.read_fd(), RDONLY, final_callback);
-  assertFullWrite(pipe.write_fd(), "Test");
+  watcher.watch(pipe.read_end_, RDONLY, final_callback->makeCallback(pipe.read_end_));
+  assertFullWrite(pipe.write_end_, "Test");
   waitForFuture(future);
 
-  watcher.unwatch(pipe.read_fd(), RDONLY);
+  watcher.unwatch(pipe.read_end_, RDONLY);
 }
 
 TEST_F(EventWatcherTest, EventLoopDoesNotBusyWait) {
@@ -440,17 +444,17 @@ TEST_F(EventWatcherTest, EventLoopDoesNotBusyWait) {
   Pipe pipe;
   auto mock_callback = std::make_shared<StrictMock<ReadMockCallback>>();
 
-  EXPECT_CALL(*mock_callback, onReadReadyMock(pipe.read_fd(), ::testing::_))
+  EXPECT_CALL(*mock_callback, onReadReadyMock(pipe.read_end_, ::testing::_))
       .Times(::testing::AtLeast(1));
 
-  watcher.watch(pipe.read_fd(), RDONLY, mock_callback);
+  watcher.watch(pipe.read_end_, RDONLY, mock_callback->makeCallback(pipe.read_end_));
 
   const auto initial_count = epoll_wait_count.load();
   std::this_thread::sleep_for(500ms);
   const auto idle_count = epoll_wait_count.load() - initial_count;
 
   for (int i = 0; i < 10; ++i) {
-    assertFullWrite(pipe.write_fd(), "x");
+    assertFullWrite(pipe.write_end_, "x");
     std::this_thread::sleep_for(10ms);
   }
 
@@ -462,7 +466,7 @@ TEST_F(EventWatcherTest, EventLoopDoesNotBusyWait) {
 
   EXPECT_GT(final_count, initial_count);
 
-  watcher.unwatch(pipe.read_fd(), RDONLY);
+  watcher.unwatch(pipe.read_end_, RDONLY);
 }
 
 TEST_F(EventWatcherTest, MultipleFdsWithMixedOperations) {
@@ -481,7 +485,7 @@ TEST_F(EventWatcherTest, MultipleFdsWithMixedOperations) {
 
   for (size_t i = 0; i < 5; ++i) {
     EXPECT_CALL(*read_callbacks[i],
-                onReadReadyMock(pipes[i].read_fd(), ::testing::_))
+                onReadReadyMock(pipes[i].read_end_, ::testing::_))
         .WillOnce([&, i](int, const std::string&) {
           promises[i].set_value();
         })
@@ -489,15 +493,15 @@ TEST_F(EventWatcherTest, MultipleFdsWithMixedOperations) {
 
     write_callbacks[i]->setLastWritten(std::to_string(i));
     EXPECT_CALL(*write_callbacks[i],
-                onWriteReadyMock(pipes[i].write_fd(), std::to_string(i)))
+                onWriteReadyMock(pipes[i].write_end_, std::to_string(i)))
         .WillOnce([&, i](int, const std::string&) {
           promises[i + 5].set_value();
           write_callbacks[i]->setLastWritten("");
         })
         .WillRepeatedly(::testing::Return());
 
-    watcher.watch(pipes[i].read_fd(), RDONLY, read_callbacks[i]);
-    watcher.watch(pipes[i].write_fd(), WRONLY, write_callbacks[i]);
+    watcher.watch(pipes[i].read_end_, RDONLY, read_callbacks[i]->makeCallback(pipes[i].read_end_));
+    watcher.watch(pipes[i].write_end_, WRONLY, write_callbacks[i]->makeCallback(pipes[i].write_end_));
   }
 
   for (auto& future : futures) {
@@ -505,7 +509,7 @@ TEST_F(EventWatcherTest, MultipleFdsWithMixedOperations) {
   }
 
   for (size_t i = 0; i < 5; ++i) {
-    watcher.unwatch(pipes[i].read_fd(), RDONLY);
-    watcher.unwatch(pipes[i].write_fd(), WRONLY);
+    watcher.unwatch(pipes[i].read_end_, RDONLY);
+    watcher.unwatch(pipes[i].write_end_, WRONLY);
   }
 }

@@ -1,99 +1,52 @@
 buildType:
-  default: Debug 
+  default: Debug
   choices:
     Debug:
       short: Debug
-      long: Emit debug information
+      long: Debug build with instrumentation
       buildType: Debug
       settings:
-        SURE_EXCEPTIONS: ""
-        UBSAN: ON
+        UBSAN: ""
         ASAN: ""
         TSAN: ""
-        TWIST_FAULTY: ""
-        TWIST_SIM: ""
-        TWIST_SIM_ISOLATION: ""
+        TTL_LOG_MIN_LEVEL: "0"
+
+    DebugUBSan:
+      short: DebugUBSan
+      long: Instrument with UB Sanitizer
+      buildType: Debug
+      settings:
+        UBSAN: "ON"
+        ASAN: ""
+        TSAN: ""
+        TTL_LOG_MIN_LEVEL: "0"
+
     DebugASan:
       short: DebugASan
       long: Instrument with Address Sanitizer
       buildType: Debug
       settings:
-        SURE_EXCEPTIONS: ""
         UBSAN: ""
         ASAN: ON
         TSAN: ""
-        TWIST_FAULTY: ""
-        TWIST_SIM: ""
-        TWIST_SIM_ISOLATION: ""
-    Release:
-      short: Release
-      long: Optimize generated code 
-      buildType: Release
-      settings:
-        SURE_EXCEPTIONS: OFF
-        UBSAN: ""
-        ASAN: ""
-        TSAN: ""
-        TWIST_FAULTY: ""
-        TWIST_SIM: ""
-        TWIST_SIM_ISOLATION: ""
-    FaultyThreadASan:
-      short: FaultyThreadASan
-      long: Multi-threaded execution with fault injections and Address Sanitizer
+        TTL_LOG_MIN_LEVEL: "0"
+
+    DebugTSan:
+      short: DebugTSan
+      long: Instrument with Thread Sanitizer
       buildType: Debug
       settings:
-        SURE_EXCEPTIONS: ""
-        UBSAN: ""
-        ASAN: ON
-        TSAN: ""
-        TWIST_FAULTY: ON
-        TWIST_SIM: ""
-        TWIST_SIM_ISOLATION: ""
-    FaultyThreadTSan:
-      short: FaultyThreadTSan
-      long: Multi-threaded execution with fault injections and Thread Sanitizer
-      buildType: Debug
-      settings:
-        SURE_EXCEPTIONS: ""
         UBSAN: ""
         ASAN: ""
         TSAN: ON
-        TWIST_FAULTY: ON
-        TWIST_SIM: ""
-        TWIST_SIM_ISOLATION: ""
-    Fiber:
-      short: Fiber
-      long: Deterministic simulation with fibers
+        TTL_LOG_MIN_LEVEL: "0"
+
+    Release:
+      short: Release
+      long: Optimize generated code
       buildType: Release
       settings:
-        SURE_EXCEPTIONS: ""
         UBSAN: ""
         ASAN: ""
         TSAN: ""
-        TWIST_FAULTY: ON
-        TWIST_SIM: ON
-        TWIST_SIM_ISOLATION: ""
-    FiberASan:
-      short: FiberASan
-      long: Deterministic simulation with fibers and Address Sanitizer
-      buildType: Release
-      settings:
-        SURE_EXCEPTIONS: ""
-        UBSAN: ""
-        ASAN: ON
-        TSAN: ""
-        TWIST_FAULTY: ON
-        TWIST_SIM: ON
-        TWIST_SIM_ISOLATION: ""
-    Matrix:
-      short: Matrix 
-      long: Isolated deterministic simulation with fibers
-      buildType: Release
-      settings:
-        SURE_EXCEPTIONS: ""
-        UBSAN: ""
-        ASAN: ""
-        TSAN: ""
-        TWIST_FAULTY: ON
-        TWIST_SIM: ON
-        TWIST_SIM_ISOLATION: ON
+        TTL_LOG_MIN_LEVEL: "2"

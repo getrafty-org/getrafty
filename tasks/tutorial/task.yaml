@@ -1,13 +1,9 @@
 binary_path: "{{build_dir}}/tasks/{{task}}/bin/{{binary}}"
 
-profiles:
-  none: {}
-
-  asan:
-    cmake_flags: -DASAN=ON
-
-  tsan:
-    cmake_flags: -DTSAN=ON
-
 tests:
   - task_tasks_tutorial_flux_capacitor_test
+commands:
+  configure: "cmake -S {{root}} -B {{build_dir}} -DCMAKE_C_COMPILER={{c_compiler}} -DCMAKE_CXX_COMPILER={{cxx_compiler}} {{flags}}"
+  build: "cmake --build {{build_dir}} --target {{target}} -j$(nproc)"
+  run: "{{binary}}"
+  clean: "rm -rf {{build_dir}}"

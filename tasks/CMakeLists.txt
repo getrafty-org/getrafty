@@ -1,3 +1,5 @@
 add_subdirectory(tutorial)
 add_subdirectory(thread-pool)
-add_subdirectory(async-io)
+add_subdirectory(event_watcher)
+add_subdirectory(mpsc_queue)
+add_subdirectory(socket)

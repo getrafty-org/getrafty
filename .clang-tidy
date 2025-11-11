@@ -1,0 +1,62 @@
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  performance-*,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  readability-*,
+  -readability-identifier-naming,
+  -readability-identifier-length,
+  cppcoreguidelines-avoid-*,
+  cppcoreguidelines-narrowing-conversions,
+  cppcoreguidelines-virtual-class-destructor
+
+WarningsAsErrors: >
+  bugprone-*,
+  performance-*,
+  modernize-*,
+  readability-identifier-naming
+
+FormatStyle: none
+
+CheckOptions:
+  # Functions: lowerCamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.MethodCase
+    value: camelBack
+
+  # Variables: snake_case
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.LocalVariableCase
+    value: lower_case
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.GlobalVariableCase
+    value: lower_case
+  - key: readability-identifier-naming.StaticVariableCase
+    value: lower_case
+
+  # Data members: snake_case_
+  - key: readability-identifier-naming.MemberCase
+    value: lower_case
+  - key: readability-identifier-naming.PrivateMemberSuffix
+    value: _
+  - key: readability-identifier-naming.ProtectedMemberSuffix
+    value: _
+  - key: readability-identifier-naming.PublicMemberSuffix
+    value: _
+
+  # Types: PascalCase
+  - key: readability-identifier-naming.TypeCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+
+  # Reduce false positives
+  - key: readability-identifier-naming.IgnoreFailedSplit
+    value: "1"

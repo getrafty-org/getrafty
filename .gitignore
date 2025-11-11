@@ -20,6 +20,7 @@ node_modules
 # Production
 
 build
+dist
 
 # Generated files
 

@@ -1,33 +1,27 @@
 begin_task()
 
-add_library(
+add_task_library(
   queue
   queue.hpp
 )
 
-target_link_libraries(
+target_task_link_libraries(
   queue
   PRIVATE
-  fmt::fmt
+  ttl
 )
 
-set_target_properties(
-  queue
-  PROPERTIES 
-  LINKER_LANGUAGE CXX
-)
-
-add_library(
-  tp
+add_task_library(
+  thread_pool
   thread_pool.hpp
   thread_pool.cpp
 )
 
-target_link_libraries(
-  tp
-  PRIVATE
+target_task_link_libraries(
+  thread_pool
+  PUBLIC
   queue
-  fmt::fmt
+  ttl
 )
 
 add_task_test(
@@ -37,10 +31,11 @@ add_task_test(
   thread_pool.cpp
 )
 
-target_link_libraries(
-  task_tasks_thread-pool_thread_pool_tests
+target_task_link_libraries(
+  thread_pool_tests
   PRIVATE
-  tp
+  thread_pool
+  ttl
 )
 
 add_task_test(
@@ -49,11 +44,11 @@ add_task_test(
   queue_test.cpp
 )
 
-target_link_libraries(
-  task_tasks_thread-pool_queue_tests
+target_task_link_libraries(
+  queue_tests
   PRIVATE
   queue
-  fmt::fmt
+  ttl
 )
 
 end_task()

@@ -1,5 +1,5 @@
-#include <queue.hpp>
 #include <gtest/gtest.h>
+#include <queue.hpp>
 #include <wait_group.hpp>
 
 #include <sys/resource.h>
@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 using namespace getrafty::concurrent;
 
 TEST(QueueTest, JustWorks) {
-  BlockingMPMCQueue<int> queue;
+  Queue<int> queue{};
 
   queue.put(42);
 
@@ -20,7 +20,7 @@ TEST(QueueTest, JustWorks) {
 }
 
 TEST(QueueTest, FIFO) {
-  BlockingMPMCQueue<int> queue;
+  Queue<int> queue{};
 
   for (int i = 0; i < 10; ++i) {
     queue.put(i);
@@ -32,12 +32,12 @@ TEST(QueueTest, FIFO) {
 }
 
 TEST(QueueTest, BlockingBehavior) {
-  BlockingMPMCQueue<int> queue;
+  Queue<int> queue{};
   std::atomic<bool> taken{false};
 
   std::thread consumer([&] {
     const int value = queue.take();
-    taken = true;
+    taken           = true;
     EXPECT_EQ(value, 123);
   });
 
@@ -51,7 +51,7 @@ TEST(QueueTest, BlockingBehavior) {
 }
 
 TEST(QueueTest, SingleProducerSingleConsumer) {
-  BlockingMPMCQueue<int> queue;
+  Queue<int> queue{};
   constexpr size_t kItems = 1000;
   std::atomic<size_t> consumed{0};
 
@@ -76,18 +76,19 @@ TEST(QueueTest, SingleProducerSingleConsumer) {
 }
 
 TEST(QueueTest, MultipleProducersSingleConsumer) {
-  BlockingMPMCQueue<int> queue;
-  constexpr size_t kProducers = 4;
+  Queue<int> queue{};
+  constexpr size_t kProducers        = 4;
   constexpr size_t kItemsPerProducer = 100;
-  constexpr size_t kTotalItems = kProducers * kItemsPerProducer;
+  constexpr size_t kTotalItems       = kProducers * kItemsPerProducer;
 
   std::vector<std::thread> producers;
+  producers.reserve(kProducers);
   std::atomic<size_t> consumed{0};
 
   for (size_t p = 0; p < kProducers; ++p) {
     producers.emplace_back([&, p] {
       for (size_t i = 0; i < kItemsPerProducer; ++i) {
-        queue.put(static_cast<int>(p * kItemsPerProducer + i));
+        queue.put(static_cast<int>((p * kItemsPerProducer) + i));
       }
     });
   }
@@ -114,13 +115,14 @@ TEST(QueueTest, MultipleProducersSingleConsumer) {
 }
 
 TEST(QueueTest, SingleProducerMultipleConsumers) {
-  BlockingMPMCQueue<int> queue;
-  constexpr size_t kConsumers = 4;
+  Queue<int> queue{};
+  constexpr size_t kConsumers        = 4;
   constexpr size_t kItemsPerConsumer = 100;
-  constexpr size_t kTotalItems = kConsumers * kItemsPerConsumer;
+  constexpr size_t kTotalItems       = kConsumers * kItemsPerConsumer;
 
   std::atomic<size_t> consumed{0};
   std::vector<std::thread> consumers;
+  consumers.reserve(kConsumers);
   std::mutex result_mutex;
   std::vector<int> all_consumed;
 
@@ -159,15 +161,17 @@ TEST(QueueTest, SingleProducerMultipleConsumers) {
 }
 
 TEST(QueueTest, MultipleProducersMultipleConsumers) {
-  BlockingMPMCQueue<int> queue;
-  constexpr size_t kProducers = 3;
-  constexpr size_t kConsumers = 3;
+  Queue<int> queue{};
+  constexpr size_t kProducers        = 3;
+  constexpr size_t kConsumers        = 3;
   constexpr size_t kItemsPerProducer = 100;
   constexpr size_t kItemsPerConsumer = 100;
-  constexpr size_t kTotalItems = kProducers * kItemsPerProducer;
+  constexpr size_t kTotalItems       = kProducers * kItemsPerProducer;
 
   std::vector<std::thread> producers;
+  producers.reserve(kProducers);
   std::vector<std::thread> consumers;
+  consumers.reserve(kConsumers);
   std::atomic<size_t> consumed{0};
   std::mutex result_mutex;
   std::vector<int> all_consumed;
@@ -175,7 +179,7 @@ TEST(QueueTest, MultipleProducersMultipleConsumers) {
   for (size_t p = 0; p < kProducers; ++p) {
     producers.emplace_back([&, p] {
       for (size_t i = 0; i < kItemsPerProducer; ++i) {
-        queue.put(static_cast<int>(p * kItemsPerProducer + i));
+        queue.put(static_cast<int>((p * kItemsPerProducer) + i));
       }
     });
   }
@@ -212,21 +216,23 @@ TEST(QueueTest, MultipleProducersMultipleConsumers) {
 }
 
 TEST(QueueTest, StressTest) {
-  BlockingMPMCQueue<int> queue;
-  constexpr size_t kProducers = 8;
-  constexpr size_t kConsumers = 8;
+  Queue<int> queue{};
+  constexpr size_t kProducers        = 8;
+  constexpr size_t kConsumers        = 8;
   constexpr size_t kItemsPerProducer = 500;
   constexpr size_t kItemsPerConsumer = 500;
-  constexpr size_t kTotalItems = kProducers * kItemsPerProducer;
+  constexpr size_t kTotalItems       = kProducers * kItemsPerProducer;
 
   std::vector<std::thread> producers;
+  producers.reserve(kProducers);
   std::vector<std::thread> consumers;
+  consumers.reserve(kConsumers);
   std::atomic<size_t> consumed{0};
 
   for (size_t p = 0; p < kProducers; ++p) {
     producers.emplace_back([&, p] {
       for (size_t i = 0; i < kItemsPerProducer; ++i) {
-        queue.put(static_cast<int>(p * kItemsPerProducer + i));
+        queue.put(static_cast<int>((p * kItemsPerProducer) + i));
         if (i % 10 == 0) {
           std::this_thread::yield();
         }
@@ -257,15 +263,14 @@ TEST(QueueTest, StressTest) {
 }
 
 TEST(QueueTest, DoesNotBusyWait) {
-  BlockingMPMCQueue<int> queue;
+  Queue<int> queue{};
 
-  std::thread consumer([&] {
-    queue.take();
-  });
+  std::thread consumer([&] { queue.take(); });
 
   std::this_thread::sleep_for(100ms);
 
-  struct rusage usage_before, usage_after;
+  struct rusage usage_before;
+  struct rusage usage_after;
   getrusage(RUSAGE_SELF, &usage_before);
 
   std::this_thread::sleep_for(5000ms);
@@ -273,7 +278,7 @@ TEST(QueueTest, DoesNotBusyWait) {
   getrusage(RUSAGE_SELF, &usage_after);
 
   const auto user_time_us =
-      (usage_after.ru_utime.tv_sec - usage_before.ru_utime.tv_sec) * 1000000 +
+      ((usage_after.ru_utime.tv_sec - usage_before.ru_utime.tv_sec) * 1000000) +
       (usage_after.ru_utime.tv_usec - usage_before.ru_utime.tv_usec);
 
   queue.put(1);
@@ -285,15 +290,16 @@ TEST(QueueTest, DoesNotBusyWait) {
 TEST(QueueTest, MoveOnlyType) {
   struct MoveOnly {
     explicit MoveOnly(int v) : value(v) {}
-    MoveOnly(const MoveOnly&) = delete;
+
+    MoveOnly(const MoveOnly&)            = delete;
     MoveOnly& operator=(const MoveOnly&) = delete;
-    MoveOnly(MoveOnly&&) = default;
-    MoveOnly& operator=(MoveOnly&&) = default;
+    MoveOnly(MoveOnly&&)                 = default;
+    MoveOnly& operator=(MoveOnly&&)      = default;
 
     int value;
   };
 
-  BlockingMPMCQueue<MoveOnly> queue;
+  Queue<MoveOnly> queue{};
 
   queue.put(MoveOnly(42));
 

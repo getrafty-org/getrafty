@@ -1,6 +1,5 @@
 #pragma once
 
-#include <fmt/format.h>
 #include <condition_variable>
 #include <deque>
 #include <mutex>
@@ -8,39 +7,28 @@
 namespace getrafty::concurrent {
 // Unbounded blocking multi-producers/multi-consumers queue
 template <typename T>
-class BlockingMPMCQueue {
+class Queue {
  public:
-  BlockingMPMCQueue() = default;
+  Queue() = default;
 
   // Non-copyable
-  BlockingMPMCQueue(const BlockingMPMCQueue&) = delete;
+  Queue(const Queue&) = delete;
 
-  BlockingMPMCQueue& operator=(const BlockingMPMCQueue&) = delete;
+  Queue& operator=(const Queue&) = delete;
 
   // Non-movable
-  BlockingMPMCQueue(BlockingMPMCQueue&&) = delete;
+  Queue(Queue&&) = delete;
 
-  ~BlockingMPMCQueue() = default;
+  ~Queue() = default;
 
   void put(T v) {
     // ==== YOUR CODE: @b270 ====
-    {
-      std::unique_lock lock(mutex_);
-      q_.emplace_back(std::move(v));
-    }
+
     // ==== END YOUR CODE ====
   }
 
   T take() {
     // ==== YOUR CODE: @48dd ====
-    while (true) {
-      std::unique_lock lock(mutex_);
-      if (!q_.empty()) {
-        auto v = std::move(q_.front());
-        q_.pop_front();
-        return v;
-      }
-    }
 
     // ==== END YOUR CODE ====
   }

@@ -1,14 +1,6 @@
 binary_path: "{{build_dir}}/tasks/{{task}}/bin/{{binary}}"
 
-profiles:
-  none: {}
-
-  asan:
-    cmake_flags: -DASAN=ON
-
-  tsan:
-    cmake_flags: -DTSAN=ON
-
 tests:
-  - task_tasks_thread-pool_thread_pool_tests
   - task_tasks_thread-pool_queue_tests
+  - task_tasks_thread-pool_thread_pool_tests
+

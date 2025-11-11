@@ -1,7 +1,7 @@
 #include <thread_pool.hpp>
 
 #include <cassert>
-#include <iostream>
+#include <bits/ttl/logger.hpp>
 
 namespace getrafty::concurrent {
 

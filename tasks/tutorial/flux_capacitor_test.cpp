@@ -5,5 +5,5 @@ using namespace getrafty::tutorial;
 
 TEST(FluxCapacitorTest, JustWorks) {
   FluxCapacitor capacitor{};
-  EXPECT_EQ(capacitor.computeTimeBreakBarrierSpeed(), 88);
+  EXPECT_EQ(capacitor.computeTimeBarrierBreakSpeed(), 88);
 }
