@@ -53,8 +53,13 @@ restart_existing_container() {
     container_id=$(check_container_exists)
     if [ -n "$container_id" ]; then
         printf "Found existing container %s. Restarting it...\n" "$container_id"
-        docker start "$container_id" >/dev/null
-        return 0
+        if docker start "$container_id" >/dev/null 2>&1; then
+            return 0
+        else
+            warn "Failed to restart container (likely networking issue). Removing and recreating..."
+            docker rm -f "$container_id" >/dev/null 2>&1
+            return 1
+        fi
     fi
     return 1
 }
@@ -285,7 +290,7 @@ cmd_attach() {
 
     container_id=$(check_container_is_running)
     if [ -z "$container_id" ]; then
-        error_exit "DevVM is not running."
+        die "DevVM is not running."
     fi
 
     if [ $root_flag -eq 1 ]; then
@@ -304,12 +309,16 @@ cmd_restart() {
 
     container_id=$(check_container_exists)
     if [ -z "$container_id" ]; then
-        error_exit "Container does not exist. Run 'tasklet boot' first."
+        die "Container does not exist. Run 'tasklet boot' first."
     fi
 
     printf "Restarting container %s...\n" "$container_id"
-    docker restart "$container_id" >/dev/null
-    printf "Container restarted successfully. Connect by running: \`tasklet attach\`.\n"
+    if docker restart "$container_id" >/dev/null 2>&1; then
+        printf "Container restarted successfully. Connect by running: \`tasklet attach\`.\n"
+    else
+        warn "Failed to restart container. Try 'tasklet boot' to recreate it."
+        return 1
+    fi
 }
 
 cmd_test() {

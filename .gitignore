@@ -22,11 +22,6 @@ node_modules
 build
 dist
 
-# Generated files
-
-.cache-loader
-.docusaurus
-
 # Misc
 
 .DS_Store
@@ -44,3 +39,5 @@ _cache
 .idea
 
 cmake-build*
+
+.claude*

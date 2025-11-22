@@ -1,8 +1,3 @@
-# Helper functions
-
-# Prepend ${PREFIX} to all arguments and put them in ${VAR}
-# Usage: prepend(FILES "${DIR}/" ${NAMES})
-
 function(prepend VAR PREFIX)
   set(LIST_VAR "")
   foreach (ELEM ${ARGN})
@@ -10,9 +5,6 @@ function(prepend VAR PREFIX)
   endforeach ()
   set(${VAR} "${LIST_VAR}" PARENT_SCOPE)
 endfunction()
-
-# Add ordered run target
-# Usage: run_chain("all_tests" ${TESTS})
 
 function(run_chain NAME)
   set(BINARIES ${ARGN})

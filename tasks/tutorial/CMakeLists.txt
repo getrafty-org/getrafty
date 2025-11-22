@@ -1,4 +1,4 @@
-begin_task()
+prologue()
 
 add_task_test(
     flux_capacitor_test
@@ -7,4 +7,4 @@ add_task_test(
     flux_capacitor.cpp
 )
 
-end_task()
+epilogue()

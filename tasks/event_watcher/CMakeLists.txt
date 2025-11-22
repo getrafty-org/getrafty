@@ -1,4 +1,4 @@
-begin_task()
+prologue()
 
 add_task_library(
   event_watcher
@@ -25,4 +25,4 @@ target_task_link_libraries(
   ttl
 )
 
-end_task()
+epilogue()

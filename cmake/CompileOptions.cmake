@@ -1,5 +1,3 @@
-# Common compile options for C++
-
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -32,4 +30,4 @@ add_link_options(-stdlib=libstdc++)
 # fuse
 add_link_options(-lfuse3)
 
-message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CPP standard: ${CMAKE_CXX_STANDARD}")

@@ -1,4 +1,4 @@
-begin_task()
+prologue()
 
 set_task_sources(
   myfs_server.hpp
@@ -12,4 +12,4 @@ add_task_test(
   myfs_server.cpp
 )
 
-end_task()
+epilogue()

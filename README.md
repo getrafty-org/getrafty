@@ -5,28 +5,34 @@
     <br>Getrafty
   </p>
 </h1>
+
 <p align="center">
   Back to the internals.
   <br />
   <a href="https://getrafty.org/blog/about">Take a Tour</a>
 </p>
 
-
-
 ## About
 
-If you've ever caught yourself wondering how things like distributed file systems work or what kind of magic keeps your favorite RPC library talking across the network — you're in the right place.
+Getrafty is an open, exploratory space for engineers who want to understand how distributed systems 
+work by giving them a playground to build, test and break compact versions of them.
 
-[Getrafty](https://getrafty.org/) is an attempt to make those big, intimidating systems feel small and approachable again. I'm occasionally putting together a series of tiny, minimalistic tasks that walk a reader through basic concepts while building our own toy version from scratch — step by step, no black boxes, no hand-waving.
+This is not a course. It's a collection of experiments and a playground.
 
-Think of it as a guided tour through the internals of distributed systems — with code you can actually run and break.
+## Contributing
 
-## Contributing and Developing
+The project is early and experimental. If you like exploring internals and learning in public, you’re welcome to join.
 
-So far, it's just been me hacking at this in my spare time, and it's open to anyone to contribute.
+Ways to contribute:
 
-If you've found a bug, please create an issue (or better, a pull request) in the repository.
+- propose experiments or tasks,  
+- add or improve code/tests,  
+- write small explanations or diagrams,  
+- open issues to discuss ideas,
+- corrections.
+
+Every contribution counts ❤️.
 
 ## License
 
-Everything here is released under the [MIT License](https://github.com/getrafty-org/getrafty/blob/main/LICENSE).
+Released under the [MIT License](https://github.com/getrafty-org/getrafty/blob/main/LICENSE).

@@ -1,4 +1,4 @@
-begin_task()
+prologue()
 
 add_task_library(
   queue
@@ -51,4 +51,4 @@ target_task_link_libraries(
   ttl
 )
 
-end_task()
+epilogue()

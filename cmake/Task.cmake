@@ -3,7 +3,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
 # --------------------------------------------------------------------
 
 # Libraries with CMake targets
-set(TARGET_LIBS "function2;GTest::gtest_main;GTest::gmock_main")
+set(TARGET_LIBS "GTest::gtest_main;GTest::gmock_main")
 
 # System libraries
 set(SYSTEM_LIBS "pthread")
@@ -22,7 +22,6 @@ function(add_task_executable BINARY_NAME)
   target_link_libraries(${BINARY_NAME} PRIVATE ${TARGET_LIBS} ${SYSTEM_LIBS})
 
   add_dependencies(${BINARY_NAME}
-    function2
     GTest::gtest_main
     GTest::gmock_main
   )
@@ -32,7 +31,7 @@ endfunction()
 
 # Prologue
 
-macro(begin_task)
+macro(prologue)
   set(TASK_DIR ${CMAKE_CURRENT_SOURCE_DIR})
   string(REPLACE "${CMAKE_SOURCE_DIR}/" "" RELATIVE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -252,7 +251,7 @@ endfunction()
 
 # Epilogue
 
-function(end_task)
+function(epilogue)
   if(${TOOL_BUILD})
     add_task_all_tests_target()
   endif()

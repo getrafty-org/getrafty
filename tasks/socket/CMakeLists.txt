@@ -1,4 +1,4 @@
-begin_task()
+prologue()
 
 
 add_task_library(
@@ -85,4 +85,4 @@ target_task_link_libraries(
   transport
 )
 
-end_task()
+epilogue()

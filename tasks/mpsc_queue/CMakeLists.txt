@@ -1,4 +1,4 @@
-begin_task()
+prologue()
 
 add_task_library(
   queue
@@ -35,4 +35,4 @@ target_task_link_libraries(
   bits
 )
 
-end_task()
+epilogue()
